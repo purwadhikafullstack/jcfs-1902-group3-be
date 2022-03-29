@@ -105,7 +105,7 @@ module.exports = {
             })
         }
     },
-    softDelete : async (req,res) => {
+    softDelete: async (req, res) => {
         try {
             await dbQuery(`UPDATE products SET idstatus='2' WHERE idproduct=${req.params.idproduct}`)
             res.status(200).send({
@@ -122,27 +122,30 @@ module.exports = {
             })
         }
     },
-    getProduct: async (req,res) => {
+    getProduct: async (req, res) => {
         try {
             let filterQuery = []
             for (prop in req.query) {
-                if(prop == 'harga_min' || prop == 'harga_max'){
-                    if(req.query[prop]) {
-                        filterQuery.push(`harga ${prop == 'harga_min' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                if (prop != 'sort' && prop != 'order') {
+                    if (prop == 'harga_min' || prop == 'harga_max') {
+                        if (req.query[prop]) {
+                            filterQuery.push(`harga ${prop == 'harga_min' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                        }
+                    } else {
+                        filterQuery.push(`${prop == 'nama' ? 'p.nama' : prop} ${prop == 'nama' ? `LIKE ${db.escape(`%${req.query[prop]}%`)}` : `=${db.escape(req.query[prop])}`}`)
                     }
-                } else {
-                    filterQuery.push(`${prop == 'nama' ? 'p.nama' : prop} ${prop == 'nama' ? `LIKE ${db.escape(`%${req.query[prop]}%`)}` : `=${db.escape(req.query[prop])}`}`)
                 }
             }
             // console.log('isi filter query', filterQuery)
-            let {status} = req.query
+            let {sort,order, status } = req.query
             let query_get = `SELECT p.*, m.material, k.kategori, j.jenis_product, s.status from products as p 
             JOIN status as s ON p.idstatus = s.idstatus
             JOIN material as m ON p.idmaterial = m.idmaterial
             JOIN kategori as k ON p.idkategori = k.idkategori
             JOIN jenis_product as j ON p.idjenis_product = j.idjenis_product
             WHERE status='aktif'
-            ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''};`
+            ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
+            ${sort && order ? `ORDER BY ${sort} ${order}`: ''};`
             // console.log('isi query', query_get)
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
