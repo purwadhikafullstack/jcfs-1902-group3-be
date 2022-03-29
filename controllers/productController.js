@@ -6,11 +6,11 @@ module.exports = {
     addproduct: async (req, res) => {
         try {
             const uploadFile = uploader('./imgProducts', 'IMGPRO').array('images', 5);
-            uploadFile(req,res, async (error) => {
+            uploadFile(req, res, async (error) => {
                 try {
-                    console.log('isi req.body',req.body);
+                    console.log('isi req.body', req.body);
                     console.log('cek uploadfile :', req.files);
-                    let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi,stock } = JSON.parse(req.body.data)
+                    let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi, stock } = JSON.parse(req.body.data)
                     let query_insert = `INSERT INTO products VALUES (null,${idmaterial}, ${idkategori}, ${idjenis_product} ,${idstatus}, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)});`
                     let insertProduct = await dbQuery(query_insert);
 
@@ -18,7 +18,7 @@ module.exports = {
                         for (let i = 0; i < req.files.length; i++) {
                             await dbQuery(`INSERT INTO images VALUES(null,${insertProduct.insertId}, 'http://localhost:2000/imgProduct/${req.files[i].filename}');`)
                         }
-                        stock.forEach( async (item,index) => {
+                        stock.forEach(async (item, index) => {
                             await dbQuery(`INSERT INTO stocks VALUES (null,${insertProduct.insertId}, ${item.idwarehouse}, ${item.qty});`)
                         })
                         res.status(200).send({
@@ -44,6 +44,66 @@ module.exports = {
                 error: error
             })
         }
+    },
+    updateProduct: async (req, res) => {
+        try {
+            let { idmaterial, idkategori, idjenis_product, nama, harga, deskripsi, stock } = req.body
+            await dbQuery(`UPDATE products SET idmaterial=${idmaterial}, idkategori=${idkategori}, idjenis_product=${idjenis_product}, nama=${db.escape(nama)}, 
+            harga=${db.escape(harga)}, deskripsi=${db.escape(deskripsi)} WHERE idproduct=${req.params.idproduct};`);
+
+            stock.forEach(async (item, index) => {
+                await dbQuery(`UPDATE stocks SET qty=${item.qty} WHERE idstock=${item.idstock}`)
+            })
+            res.status(200).send({
+                message: 'success update product',
+                success: true,
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    updateImageProduct: async (req, res) => {
+        try {
+            const updateFile = uploader('./imgProducts', 'IMGPRO').fields([{ name: 'images' }])
+            updateFile(req, res, async (error) => {
+                try {
+                    let { images } = JSON.parse(req.body.data)
+                    console.log('cek uploadFileCover :', req.files);
+                    let getImageBeforeUpdate = await dbQuery(`SELECT url FROM images WHERE idimage=${req.params.idimage}`)
+                    await dbQuery(`UPDATE images SET url=${images.url ? images.url : `'http://localhost:2000/imgProduct/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
+                    let getFileImage = getImageBeforeUpdate[0].url.split('/')
+                    if (images.url == undefined) {
+                        if (fs.existsSync(`./public./imgProducts/${getFileImage[getFileImage.length - 1]}`)) {
+                            fs.unlinkSync(`./public./imgProducts/${getFileImage[getFileImage.length - 1]}`)
+                        }
+                    }
+                    res.status(200).send({
+                        success: true,
+                        message: 'update images success'
+                    })
+                } catch (error) {
+                    console.log(error)
+                    res.status(500).send({
+                        success: false,
+                        message: 'failed',
+                        error: error
+                    })
+                }
+            })
+
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
     }
-    
+
 }
