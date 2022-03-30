@@ -142,7 +142,7 @@ module.exports = {
             JOIN status as s ON p.idstatus = s.idstatus
             JOIN material as m ON p.idmaterial = m.idmaterial
             JOIN kategori as k ON p.idkategori = k.idkategori
-            JOIN jenis_product as j ON p.idjenis_product = j.idjenis_product
+            JOIN jenis_products as j ON p.idjenis_product = j.idjenis_product
             WHERE status='aktif'
             ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
             ${sort && order ? `ORDER BY ${sort} ${order}`: ''};`
