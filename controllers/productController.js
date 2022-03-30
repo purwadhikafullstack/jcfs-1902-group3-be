@@ -5,8 +5,8 @@ const fs = require('fs')
 module.exports = {
     addproduct: async (req, res) => {
         try {
-            const uploadFile = uploader('./imgProducts', 'IMGPRO').array('images', 5);
-            uploadFile(req, res, async (error) => {
+            const uploadFile = uploader('/imgProducts', 'IMGPRO').array('images', 5);
+            uploadFile(req,res, async (error) => {
                 try {
                     console.log('isi req.body', req.body);
                     console.log('cek uploadfile :', req.files);
@@ -27,7 +27,7 @@ module.exports = {
                     }
                 } catch (error) {
                     console.log(error)
-                    req.files.forEach(item => fs.unlinkSync(`./public./imgProducts/${item.filename}`))
+                    req.files.forEach(item => fs.unlinkSync(`./public/imgProducts/${item.filename}`))
                     res.status(500).send({
                         message: 'failed',
                         success: false,
@@ -68,7 +68,7 @@ module.exports = {
     },
     updateImageProduct: async (req, res) => {
         try {
-            const updateFile = uploader('./imgProducts', 'IMGPRO').fields([{ name: 'images' }])
+            const updateFile = uploader('/imgProducts', 'IMGPRO').fields([{ name: 'images' }])
             updateFile(req, res, async (error) => {
                 try {
                     let { images } = JSON.parse(req.body.data)
