@@ -3,7 +3,13 @@ const { db, dbQuery } = require('../supports/database')
 module.exports = {
     getJenisProduct: async (req, res) => {
         try {
-            let getJenisProduct = await dbQuery(`SELECT * FROM jenis_products`)
+            let filterQuery = []
+            for (prop in req.query) {
+                filterQuery.push(`${prop == 'kategori' ? `j.idkategori=${req.query[prop]}` : ''}`)
+            }
+            let getJenisProduct = await dbQuery(`SELECT j.*, k.kategori FROM jenis_products as j
+            JOIN kategori as k ON j.idkategori = k.idkategori
+            ${filterQuery.length > 0 ? `AND ${filterQuery.join('AND')}` : ''}`)
             res.status(200).send({
                 success: true,
                 message: 'success get JenisProduct',
