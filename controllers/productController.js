@@ -11,7 +11,8 @@ module.exports = {
                     console.log('isi req.body', req.body);
                     console.log('cek uploadfile :', req.files);
                     let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi,stock,date } = JSON.parse(req.body.data)
-                    let query_insert = `INSERT INTO products VALUES (null,${idmaterial}, ${idkategori}, ${idjenis_product} , 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
+                    let query_insert = `INSERT INTO products (idmaterial,idkategori,idjenis_product,idstatus,nama,harga,deskripsi,added_date) 
+                    VALUES (null,${idmaterial}, ${idkategori}, ${idjenis_product}, 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
                     let insertProduct = await dbQuery(query_insert);
 
                     if (insertProduct.insertId) {
