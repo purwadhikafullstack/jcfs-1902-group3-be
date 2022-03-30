@@ -46,9 +46,9 @@ module.exports = {
     },
     updateProduct: async (req, res) => {
         try {
-            let { idmaterial, idkategori, idjenis_product, nama, harga, deskripsi, stock } = req.body
+            let { idmaterial, idkategori, idjenis_product, nama, harga, deskripsi, stock, date } = req.body
             await dbQuery(`UPDATE products SET idmaterial=${idmaterial}, idkategori=${idkategori}, idjenis_product=${idjenis_product}, nama=${db.escape(nama)}, 
-            harga=${db.escape(harga)}, deskripsi=${db.escape(deskripsi)} WHERE idproduct=${req.params.idproduct};`);
+            harga=${db.escape(harga)}, deskripsi=${db.escape(deskripsi)}, updated_date=${db.escape(date)} WHERE idproduct=${req.params.idproduct};`);
 
             stock.forEach(async (item, index) => {
                 await dbQuery(`UPDATE stocks SET qty=${item.qty} WHERE idstock=${item.idstock}`)
@@ -77,8 +77,8 @@ module.exports = {
                     await dbQuery(`UPDATE images SET url=${images.url ? images.url : `'http://localhost:2000/imgProduct/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
                     let getFileImage = getImageBeforeUpdate[0].url.split('/')
                     if (images.url == undefined) {
-                        if (fs.existsSync(`./public./imgProducts/${getFileImage[getFileImage.length - 1]}`)) {
-                            fs.unlinkSync(`./public./imgProducts/${getFileImage[getFileImage.length - 1]}`)
+                        if (fs.existsSync(`./public/imgProducts/${getFileImage[getFileImage.length - 1]}`)) {
+                            fs.unlinkSync(`./public/imgProducts/${getFileImage[getFileImage.length - 1]}`)
                         }
                     }
                     res.status(200).send({
