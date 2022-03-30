@@ -5,13 +5,13 @@ const fs = require('fs')
 module.exports = {
     addproduct: async (req, res) => {
         try {
-            const uploadFile = uploader('./imgProducts', 'IMGPRO').array('images', 5);
-            uploadFile(req, res, async (error) => {
+            const uploadFile = uploader('/imgProducts', 'IMGPRO').array('images', 5);
+            uploadFile(req,res, async (error) => {
                 try {
                     console.log('isi req.body', req.body);
                     console.log('cek uploadfile :', req.files);
                     let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi,stock,date } = JSON.parse(req.body.data)
-                    let query_insert = `INSERT INTO products VALUES (null,${idmaterial}, ${idkategori}, ${idjenis_product} ,${idstatus}, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
+                    let query_insert = `INSERT INTO products VALUES (null,${idmaterial}, ${idkategori}, ${idjenis_product} , 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
                     let insertProduct = await dbQuery(query_insert);
 
                     if (insertProduct.insertId) {
@@ -68,7 +68,7 @@ module.exports = {
     },
     updateImageProduct: async (req, res) => {
         try {
-            const updateFile = uploader('./imgProducts', 'IMGPRO').fields([{ name: 'images' }])
+            const updateFile = uploader('/imgProducts', 'IMGPRO').fields([{ name: 'images' }])
             updateFile(req, res, async (error) => {
                 try {
                     let { images } = JSON.parse(req.body.data)
