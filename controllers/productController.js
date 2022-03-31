@@ -72,12 +72,12 @@ module.exports = {
             const updateFile = uploader('/imgProducts', 'IMGPRO').fields([{ name: 'images' }])
             updateFile(req, res, async (error) => {
                 try {
-                    let { images } = JSON.parse(req.body.data)
+                    let { url } = JSON.parse(req.body.data)
                     console.log('cek uploadFileCover :', req.files);
                     let getImageBeforeUpdate = await dbQuery(`SELECT url FROM images WHERE idimage=${req.params.idimage}`)
-                    await dbQuery(`UPDATE images SET url=${images.url ? images.url : `'http://localhost:2000/imgProducts/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
+                    await dbQuery(`UPDATE images SET url=${url ? url : `'http://localhost:2000/imgProducts/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
                     let getFileImage = getImageBeforeUpdate[0].url.split('/')
-                    if (images.url == undefined) {
+                    if (url == undefined) {
                         if (fs.existsSync(`./public/imgProducts/${getFileImage[getFileImage.length - 1]}`)) {
                             fs.unlinkSync(`./public/imgProducts/${getFileImage[getFileImage.length - 1]}`)
                         }
