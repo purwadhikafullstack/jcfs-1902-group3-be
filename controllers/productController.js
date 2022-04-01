@@ -104,6 +104,23 @@ module.exports = {
                 error: error
             })
         }
+    },
+    softDelete : async (req,res) => {
+        try {
+            await dbQuery(`UPDATE products SET idstatus='2' WHERE idproduct=${req.params.idproduct}`)
+            res.status(200).send({
+                message: 'success delete product',
+                success: true,
+
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
     }
 
 }
