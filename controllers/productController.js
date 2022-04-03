@@ -75,7 +75,7 @@ module.exports = {
                     let { url } = JSON.parse(req.body.data)
                     console.log('cek uploadFileCover :', req.files);
                     let getImageBeforeUpdate = await dbQuery(`SELECT url FROM images WHERE idimage=${req.params.idimage}`)
-                    await dbQuery(`UPDATE images SET url=${url ? url : `'http://localhost:2000/imgProducts/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
+                    await dbQuery(`UPDATE images SET url=${url ? url : `'imgProducts/${req.files.images[0].filename}'`} WHERE idimage=${req.params.idimage}`)
                     let getFileImage = getImageBeforeUpdate[0].url.split('/')
                     if (url == undefined) {
                         if (fs.existsSync(`./public/imgProducts/${getFileImage[getFileImage.length - 1]}`)) {
