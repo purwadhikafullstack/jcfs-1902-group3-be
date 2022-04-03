@@ -17,7 +17,7 @@ module.exports = {
 
                     if (insertProduct.insertId) {
                         for (let i = 0; i < req.files.length; i++) {
-                            await dbQuery(`INSERT INTO images VALUES(null,${insertProduct.insertId}, 'http://localhost:2000/imgProducts/${req.files[i].filename}');`)
+                            await dbQuery(`INSERT INTO images VALUES(null,${insertProduct.insertId}, 'imgProducts/${req.files[i].filename}');`)
                         }
                         await dbQuery(`INSERT INTO stocks VALUES (null,${insertProduct.insertId},null, ${db.escape(stock)});`)
                         
