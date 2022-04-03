@@ -150,10 +150,12 @@ module.exports = {
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
             let resultsStock = await dbQuery(`SELECT * FROM stocks`)
+            let resultsMaterial = await dbQuery(`SELECT * FROM material`)
 
             resultsProduct.forEach((item, index) => {
                 item.images = [];
                 item.stock = [];
+                item.material = [];
                 resultsImage.forEach(item2 => {
                     if (item.idproduct == item2.idproduct) {
                         delete item2.idproduct
@@ -165,6 +167,11 @@ module.exports = {
                         delete item3.idproduct
                         item.stock.push(item3)
                     }
+                })
+                resultsMaterial.forEach((item4,index)=> {
+                   if(item4.idmaterial == item.idmaterial){
+                       item.material.push(item4)
+                   }
                 })
             })
             res.status(200).send({
