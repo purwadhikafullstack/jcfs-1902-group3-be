@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const {productController} = require('../controllers')
 
+router.get('/', productController.getProduct)
 router.post('/', productController.addproduct)
 router.patch('/:idproduct', productController.updateProduct)
 router.patch('/image/:idimage', productController.updateImageProduct)
