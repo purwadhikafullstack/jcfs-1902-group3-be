@@ -9,13 +9,13 @@ const PORT = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use(bearerToken()); 
+app.use(bearerToken());
 
 // DB Check Connection
-const {db} = require('./supports/database')
+const { db } = require('./supports/database')
 
 db.getConnection((err, connection) => {
-    if(err) {
+    if (err) {
         console.log('error mysql :', err.message)
     }
 
@@ -23,8 +23,10 @@ db.getConnection((err, connection) => {
 })
 
 // Routes API Setup
-const {productRoute, kategoriRoute, materialRoute, jenisProductRoute} = require('./routers')
+app.get(`/`, (req, res) => res.status(200).send(`<h2>Welcome to woodavenue API</h2>`))
+const { usersRoute, productRoute, kategoriRoute, materialRoute, jenisProductRoute } = require('./routers')
 
+app.use(`/users`, usersRoute);
 app.use('/products', productRoute)
 app.use('/kategori', kategoriRoute)
 app.use('/material', materialRoute)
