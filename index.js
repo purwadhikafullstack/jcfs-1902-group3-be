@@ -23,11 +23,13 @@ db.getConnection((err, connection) => {
 })
 
 // Routes API Setup
-const {productRoute, kategoriRoute, materialRoute, jenisProductRoute} = require('./routers')
+const {productRoute, kategoriRoute, materialRoute, jenisProductRoute, stockRoute, transactionRoute} = require('./routers')
 
 app.use('/products', productRoute)
 app.use('/kategori', kategoriRoute)
 app.use('/material', materialRoute)
 app.use('/jenis/products', jenisProductRoute)
+app.use('/stock/sum', stockRoute)
+app.use('/transactions', transactionRoute)
 
 app.listen(PORT, () => console.log("Your API RUNNING :", PORT));
