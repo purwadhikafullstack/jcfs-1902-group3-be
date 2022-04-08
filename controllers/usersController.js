@@ -31,21 +31,21 @@ module.exports = {
                     error: err
                 })
             }
-            if(results.length > 0){
-                let {iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status}=results[0]
-                let token = createToken({iduser, idrole, username, email})
+            if (results.length > 0) {
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress } = results[0]
+                let token = createToken({ iduser, idrole, idaddress, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: {nama, gender, username, umur, email, no_telpon, photo, status, token},
-                    err:``
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress, token },
+                    err: ``
                 })
-            }else{
+            } else {
                 res.status(500).send({
                     success: false,
                     message: `Login Failed`,
                     dataLogin: {},
-                    err:err
+                    err: err
                 })
             }
         })
@@ -59,20 +59,20 @@ module.exports = {
                 ${db.escape(email)}, 
                 ${db.escape(hashPassword(password))},
                 3,
-                null,
+                null,                
                 ${db.escape(username)},
                 'https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png'
                 )`
             let checkusername = await dbQuery(getUsername)
             let checkmail = await dbQuery(getEmail)
             if (checkmail.length || checkusername.length > 0) {
-                if(checkmail.length > 0){
+                if (checkmail.length > 0) {
                     res.status(400).send({
                         success: false,
                         message: "Email Exist",
                         error: ""
                     })
-                } else{
+                } else {
                     res.status(400).send({
                         success: false,
                         message: "Username Exist",
@@ -84,8 +84,8 @@ module.exports = {
                 if (insertUser.insertId) {
                     // get data user berdasarkan insertId
                     let getUser = await dbQuery(`Select * from users where iduser=${insertUser.insertId};`)
-                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status  } = getUser[0]
-                    let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status })
+                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress } = getUser[0]
+                    let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress })
                     // mengirimkan email yang berisi token untuk login
                     await transporter.sendMail({
                         from: 'Admin WoodAvenue',
@@ -122,7 +122,7 @@ module.exports = {
                 let verify = await dbQuery(verifyScript)
                 if (verify.length > 0) {
                     let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status } = verify[0];
-                    let token = createToken({ iduser, idrole,username,email})
+                    let token = createToken({ iduser, idrole, username, email })
                     res.status(200).send({
                         success: true,
                         message: "Login Success :white_check_mark:",
@@ -149,8 +149,8 @@ module.exports = {
         }
     },
     keepLogin: (req, res) => {
-        console.log("cek req.dataUser",req.dataUser)
-        console.log("cek req.body.data",req.body)
+        console.log("cek req.dataUser", req.dataUser)
+        console.log("cek req.body.data", req.body)
         db.query(`Select * from users WHERE iduser=${db.escape(req.dataUser.iduser)};`, (err, results) => {
             if (err) {
                 res.status(500).send({
@@ -161,12 +161,12 @@ module.exports = {
             };
             console.log(results[0])
             if (results.length > 0) {
-                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status } = results[0]
-                let token = createToken({ iduser, idrole,username,email})
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status,idaddress } = results[0]
+                let token = createToken({ iduser, idrole, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: { idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, token },
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status,idaddress, token },
                     err: ``
                 })
             } else {
@@ -251,57 +251,6 @@ module.exports = {
             })
         }
     },
-    inputDataUser: async (req, res, next) => {
-        try {
-            console.log(req.body)
-            let { nama, gender, email, umur, photo, no_telpon } = req.body
-            // 1. update data untuk table users
-            let updateProfile = await dbQuery(`UPDATE users SET nama=${db.escape(nama)}, gender=${db.escape(gender)}, 
-                email=${db.escape(email)}, umur=${db.escape(umur)}, photo=${db.escape(photo)}, no_telpon=${db.escape(no_telpon)} WHERE iduser=3;`);
-
-            // 2. mengirimkan response
-            res.status(200).send({
-                success: true,
-                message: "update data success",
-                data: updateProfile
-            })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send({
-                success: false,
-                message: "Failed",
-                error: error
-            })
-        }
-    },
-    addAddress: async (req, res) => {
-        try {
-            let { iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos } = req.body
-            let insertAddress = await dbQuery(`insert into address (iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
-                3,
-                1,
-                ${db.escape(nama_penerima)},
-                ${db.escape(alamat)},
-                ${db.escape(no_telpon)},
-                ${db.escape(provinsi)},
-                ${db.escape(kota)},
-                ${db.escape(kecamatan)},
-                ${db.escape(kode_pos)}
-            );`)
-
-            res.status(200).send({
-                success: true,
-                message: "Add address Success ✅"
-            })
-        } catch (error) {
-            console.log(error)
-            res.status(500).send({
-                success: false,
-                message: "Failed",
-                error: error
-            })
-        }
-    },
     updateImageProfile: async (req, res) => {
         try {
             const updateFile = uploader('/imgProfile', 'IMGPROFILE').fields([{ name: 'images' }])
@@ -310,16 +259,16 @@ module.exports = {
                     let { photo } = JSON.parse(req.body.data)
                     console.log('cek uploadFileCover :', req.files);
                     let getImageBeforeUpdate = await dbQuery(`SELECT photo FROM users WHERE iduser=${db.escape(req.dataUser.iduser)}`)
-                    await dbQuery(`UPDATE users SET photo=${photo ? photo : `'imgProducts/${req.files.images[0].filename}'`} WHERE iduser=${db.escape(req.dataUser.iduser)}`)                    
+                    await dbQuery(`UPDATE users SET photo=${photo ? photo : `'imgProducts/${req.files.images[0].filename}'`} WHERE iduser=${db.escape(req.dataUser.iduser)}`)
                     let getFileImage = getImageBeforeUpdate[0].photo.split('/')
                     if (photo == undefined) {
                         if (fs.existsSync(`./public/imgProfile/${getFileImage[getFileImage.length - 1]}`)) {
                             fs.unlinkSync(`./public/imgProfile/${getFileImage[getFileImage.length - 1]}`)
                         }
-                    }                    
+                    }
                     res.status(200).send({
                         success: true,
-                        message: 'update images success'                        
+                        message: 'update images success'
                     })
                 } catch (error) {
                     console.log(error)
@@ -451,7 +400,136 @@ module.exports = {
                 err: ''
             })
         }
-    }
+    },
+    getAddress: async (req, res) => {
+        try {
+            console.log("req.dataUser getAddress ", req.dataUser)
+            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)};`)
+            res.status(200).send({
+                success: true,
+                address: getAddress,
+                message: 'Get Address Success'
+            });
+        } catch (error) {
+            console.log('Get Address failed', error)
+            res.status(500).send({
+                success: failed,
+                message: 'Get Address error',
+                error
+            });
+        }
+    },
+    addAddress: async (req, res) => {
+        try {
+            let { iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos } = req.body
+            let insertAddress = await dbQuery(`insert into address (iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
+                ${db.escape(req.dataUser.iduser)},
+                1,
+                ${db.escape(nama_penerima)},
+                ${db.escape(alamat)},
+                ${db.escape(no_telpon)},
+                ${db.escape(provinsi)},
+                ${db.escape(kota)},
+                ${db.escape(kecamatan)},
+                ${db.escape(kode_pos)}
+            );`)
+
+            res.status(200).send({
+                success: true,
+                message: "Add address Success ✅"
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    editAddress: async (req, res) => {
+        try {
+            let { nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos } = req.body
+            let insertAddress = await dbQuery(`update address set 
+            nama_penerima=${db.escape(nama_penerima)},
+            alamat=${db.escape(alamat)},
+            no_telpon=${db.escape(no_telpon)},
+            provinsi=${db.escape(provinsi)},
+            kota=${db.escape(kota)},
+            kecamatan=${db.escape(kecamatan)},
+            kode_pos=${db.escape(kode_pos)}
+            where idaddress=${db.escape(req.params.idaddress)}
+            and iduser=${db.escape(req.dataUser.iduser)}
+            ;`)
+
+            res.status(200).send({
+                success: true,
+                message: "Edit Address Success ✅"
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    deleteAddress: async (req, res) => {
+        try {
+            await dbQuery(`delete from address where idaddress=${db.escape(req.params.idaddress)} and iduser=${db.escape(req.dataUser.iduser)}`)
+            res.status(200).send({
+                success: true,
+                message: "Delete Address Success ✅"
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    chooseAddress: async (req, res) => {
+        try {
+            await dbQuery(`update users set idaddress=${db.escape(req.body.idaddress)} where iduser=${db.escape(req.dataUser.iduser)}`)
+            res.status(200).send({
+                success: true,
+                message: "choose address success",
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    inputDataUser: async (req, res, next) => {
+        try {
+            console.log(req.body)
+            let { nama, gender, email, umur, photo, no_telpon } = req.body
+            // 1. update data untuk table users
+            let updateProfile = await dbQuery(`UPDATE users SET nama=${db.escape(nama)}, gender=${db.escape(gender)}, 
+                email=${db.escape(email)}, umur=${db.escape(umur)}, photo=${db.escape(photo)}, no_telpon=${db.escape(no_telpon)} WHERE iduser=3;`);
+
+            // 2. mengirimkan response
+            res.status(200).send({
+                success: true,
+                message: "update data success",
+                data: updateProfile
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
 }
 
         // try {
