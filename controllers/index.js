@@ -5,6 +5,7 @@ const materialController = require('./materialController')
 const jenisProductController = require('./jenisProductController')
 const stockController = require('./stockController')
 const transactionController = require('./transactionController')
+const addressController = require('./addressController')
 
 module.exports = {
     usersController,
@@ -13,5 +14,6 @@ module.exports = {
     materialController,
     jenisProductController,
     stockController,
-    transactionController
+    transactionController,
+    addressController
 }

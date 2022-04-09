@@ -5,6 +5,7 @@ const materialRoute  = require('./materialRoute')
 const jenisProductRoute  = require('./jenisProductRoute')
 const stockRoute  = require('./stockRoute')
 const transactionRoute  = require('./transactionRoute')
+const addressRoute  = require('./addressRoute')
 
 module.exports = {
     usersRoute,
@@ -13,5 +14,6 @@ module.exports = {
     materialRoute,
     jenisProductRoute,
     stockRoute,
-    transactionRoute
+    transactionRoute,
+    addressRoute
 }
