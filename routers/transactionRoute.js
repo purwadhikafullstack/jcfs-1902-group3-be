@@ -6,5 +6,6 @@ router.post('/carts', readToken, transactionController.addCart)
 router.patch('/carts/:idcart', readToken, transactionController.updateQtyCart)
 router.get('/carts', readToken, transactionController.getCart)
 router.delete('/carts/:idcart', readToken, transactionController.deleteCart)
+router.post('/ongkos', readToken, transactionController.getOngkir)
 
 module.exports = router
