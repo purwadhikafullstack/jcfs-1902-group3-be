@@ -4,7 +4,11 @@ const { uploader } = require('../supports/uploader');
 const { hashPassword, createToken } = require("../supports/enkripsi");
 const { transporter } = require("../supports/nodemailer");
 const Crypto = require(`crypto`);
+const { default: axios } = require("axios");
 
+axios.defaults.baseURL = 'https://api.rajaongkir.com/starter'
+axios.defaults.headers.common['key'] = 'e16ebfa0c9d8e75186df8a9122d40fa4'
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 module.exports = {
     getData: (req, res, next) => {
@@ -313,62 +317,6 @@ module.exports = {
             })
         }
     },
-    // updatePhoto: async (req, res) => {
-    //     // http://localhost:2000/imgProfile/IMGPROFILE1648563821750.jpg
-    //     try {
-    //         // if (req.dataUser.role == 'user') {
-    //         let updateFile = uploader('/imgProfile', 'IMGPROFILE').fields([{ name: 'photo' }]);
-    //         updateFile(req, res, async (error) => {
-    //             try {
-    //                 // console.log('isi req.body =>', req.body.data)
-    //                 console.log('cek uploadFilePhoto :', req.files);
-    //                 let { photo } = JSON.parse(req.body.photo)
-    //                 console.log('cek JSON.parse :', JSON.parse(req.body.photo));
-    //                 let getPhotoBeforeUpdate = await dbQuery(`SELECT photo FROM users WHERE iduser=3; `)
-    //                 let slqUpdate = `UPDATE users SET photo=${`'http://localhost:2000/public/imgProfile/${req.files.photo[0].filename}'`} WHERE iduser=3;`;
-    //                 // let slqUpdate = `UPDATE users SET photo=${photo ? db.escape(photo) : `'http://localhost:2000/public/imgProfile/${req.files.photo[0].filename}'`} WHERE iduser=3;`;
-    //                 let updatePhoto = await dbQuery(slqUpdate)
-    //                 console.log("get file photo", getfilePhoto)
-    //                 let getfilePhoto = getPhotoBeforeUpdate[0].photo.split('/');
-    //                 fs.unlinkSync(`./public/imgProfile/${getfilePhoto[getfilePhoto.length - 1]}`)
-    //                 // if (photo == undefined) {
-    //                 //     if (fs.existsSync(`./public/imgProfile/${getfilePhoto[getfilePhoto.length - 1]}`)) {
-    //                 //     }
-    //                 // }
-
-    //                 res.status(200).send({
-    //                     message: 'success update Photo',
-    //                     success: true
-    //                 })
-
-    //             } catch (error) {
-    //                 console.log(error)
-    //                 // req.files.photo.forEach(item => fs.unlinkSync(`./public/imgProfile/${item.filename}`))
-    //                 // fs.unlinkSync(`./public/imgProfile/${req.files.photo[0].filename}`)
-    //                 res.status(500).send({
-    //                     message: 'failed',
-    //                     success: false,
-    //                     error: error
-    //                 })
-    //             }
-    //         })
-
-    //         // } else {
-    //         //     res.status(401).send({
-    //         //         message: `you can't acces this API`,
-    //         //         success: false,
-    //         //     })
-    //         // }
-    //     } catch (error) {
-    //         console.log(error)
-    //         res.status(500).send({
-    //             message: 'failed',
-    //             success: false,
-    //             error: error
-    //         })
-    //     }
-
-    // },
     forgotpassword: async (req, res) => {
         try {
             console.log("req.body.email ", req.body)
@@ -427,8 +375,7 @@ module.exports = {
     },
     getAddress: async (req, res) => {
         try {
-            console.log("req.dataUser getAddress ", req.dataUser)
-            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)};`)
+            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)} ${req.query.idstatus ? `AND idstatus=${req.query.idstatus}` : '' } ORDER BY idstatus ;`)
             res.status(200).send({
                 success: true,
                 address: getAddress,
@@ -437,7 +384,7 @@ module.exports = {
         } catch (error) {
             console.log('Get Address failed', error)
             res.status(500).send({
-                success: failed,
+                success: false,
                 message: 'Get Address error',
                 error
             });
@@ -445,10 +392,20 @@ module.exports = {
     },
     addAddress: async (req, res) => {
         try {
-            let { iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos } = req.body
-            let insertAddress = await dbQuery(`insert into address (iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
+            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota } = req.body
+            let provinsi,kota
+            let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
+            let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`) 
+            if(getProvinsi && getkota){
+               provinsi = getProvinsi.data.rajaongkir.results.province
+               kota = getkota.data.rajaongkir.results.city_name
+
+            }
+            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
                 ${db.escape(req.dataUser.iduser)},
-                1,
+                ${db.escape(idprovinsi)},
+                ${db.escape(idkota)},
+                5,
                 ${db.escape(nama_penerima)},
                 ${db.escape(alamat)},
                 ${db.escape(no_telpon)},
@@ -517,7 +474,14 @@ module.exports = {
     },
     chooseAddress: async (req, res) => {
         try {
-            await dbQuery(`update users set idaddress=${db.escape(req.body.idaddress)} where iduser=${db.escape(req.dataUser.iduser)}`)
+            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
+            if(getAlamat.length > 0) {
+                getAlamat.forEach(async(item,index) => {
+                    await dbQuery(`UPDATE address SET idstatus=5 WHERE idaddress=${item.idaddress}`)
+                })
+                await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
+            }
+            // console.log('isi req body',req.body)
             res.status(200).send({
                 success: true,
                 message: "choose address success",
@@ -555,33 +519,3 @@ module.exports = {
         }
     },
 }
-
-        // try {
-        //     let {nama, gender, email, alamat, umur, photo} = req.body
-
-        //     let updateProfile = dbQuery(
-        //         `update users set
-        //         nama="${nama}",
-        //         gender="${gender}",
-        //         email="${email}",
-        //         alamat="${alamat}",
-        //         umur="${umur}",
-        //         photo="${photo}"
-        //         where iduser = 3;
-        //         `)
-                // res.status(200).send({
-                //     success: true,
-                //     message: "update data success",
-                //     data: updateProfile
-                // })
-        // }catch (error) {
-            // console.log(error)
-            // res.status(500).send({
-            //     success:false,
-            //     message:"Failed",
-            //     error:error
-            // })
-        // }
-
-//     }
-// }
