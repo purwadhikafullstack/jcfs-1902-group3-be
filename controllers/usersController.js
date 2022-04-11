@@ -64,7 +64,7 @@ module.exports = {
                 ${db.escape(hashPassword(password))},
                 3,                                
                 ${db.escape(username)},
-                'https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png',   
+                '/imgProfile/defaultPP.png',   
                 1             
                 );`
             let checkusername = await dbQuery(getUsername)
