@@ -32,12 +32,12 @@ module.exports = {
                 })
             }
             if (results.length > 0) {
-                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idaddress, username, email })
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
+                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress, token },
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress, token },
                     err: ``
                 })
             } else {
@@ -55,14 +55,14 @@ module.exports = {
             let { password, email, username } = req.body
             let getEmail = `Select * from users WHERE email = ${db.escape(email)};`
             let getUsername = `Select * from users WHERE username = ${db.escape(username)};`
-            let insertSQL = `Insert into users (email, password, idrole, idwarehouse, username, photo) values (
+            let insertSQL = `Insert into users (email, password, idrole, username, photo, idstatus) values (
                 ${db.escape(email)}, 
                 ${db.escape(hashPassword(password))},
-                3,
-                null,                
+                3,                                
                 ${db.escape(username)},
-                'https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png'
-                )`
+                'https://www.kindpng.com/picc/m/24-248253_user-profile-default-image-png-clipart-png-download.png',   
+                1             
+                );`
             let checkusername = await dbQuery(getUsername)
             let checkmail = await dbQuery(getEmail)
             if (checkmail.length || checkusername.length > 0) {
@@ -84,8 +84,9 @@ module.exports = {
                 if (insertUser.insertId) {
                     // get data user berdasarkan insertId
                     let getUser = await dbQuery(`Select * from users where iduser=${insertUser.insertId};`)
-                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress } = getUser[0]
-                    let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, idaddress })
+                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = getUser[0]
+                    // let token = createToken({ iduser, nama, gender, username, umur, email, no_telpon, photo })
+                    let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress })
                     // mengirimkan email yang berisi token untuk login
                     await transporter.sendMail({
                         from: 'Admin WoodAvenue',
@@ -114,19 +115,20 @@ module.exports = {
     },
     verification: async (req, res) => {
         try {
+            console.log("req.dataUser", req.dataUser)
             let { iduser } = req.dataUser
             if (iduser) {
-                let updateStatus = `UPDATE users SET status = 'verified' WHERE iduser = ${db.escape(iduser)}`
-                await dbQuery(updateStatus)
-                let verifyScript = `Select * from users WHERE iduser=${db.escape(iduser)};`
-                let verify = await dbQuery(verifyScript)
+                await dbQuery(`UPDATE users SET idstatus = 3 WHERE iduser = ${db.escape(iduser)}`)                
+                let verify = await dbQuery(`Select * from users WHERE iduser=${db.escape(iduser)};`)                
                 if (verify.length > 0) {
-                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status } = verify[0];
-                    let token = createToken({ iduser, idrole, username, email })
+                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo,idstatus, idaddress } = verify[0];
+                    // let token = createToken({ iduser, username, email })
+                    let token = createToken({ iduser, nama, gender, username, umur, email, no_telpon, photo })
+                    // let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo,idstatus, idaddress })
                     res.status(200).send({
                         success: true,
                         message: "Login Success :white_check_mark:",
-                        dataVerify: { idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status, token },
+                        dataVerify: { idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idaddress, idstatus, token },
                         err: ''
                     })
                 }
@@ -159,14 +161,14 @@ module.exports = {
                     error: err
                 })
             };
-            console.log(results[0])
+            console.log("ni bang dari keepLogin",results[0])
             if (results.length > 0) {
-                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status,idaddress } = results[0]
-                let token = createToken({ iduser, idrole, username, email })
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress } = results[0]
+                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, status,idaddress, token },
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress, token },
                     err: ``
                 })
             } else {
@@ -241,6 +243,28 @@ module.exports = {
                 success: true,
                 message: "update gender success",
                 data: updateGender
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    editPhoto: async (req, res) => {
+        try {
+            const uploadFile = uploader('/imgProfile', 'IMGPROFILE').array("photo", 1);
+            uploadFile(req, res, async(error)=> {
+                let {photo} = req.body
+                console.log("req body umur", req.body.photo)
+                let updatePhoto = await dbQuery(`Update users set photo=${req.files[0] ? db.escape(`/imgProfile/${req.files[0].filename}`) : db.escape(photo)} where iduser=${db.escape(req.dataUser.iduser)};`)
+                res.status(200).send({
+                    success: true,
+                    message: "update photo success",
+                    data: updatePhoto
+                })
             })
         } catch (error) {
             console.log(error)

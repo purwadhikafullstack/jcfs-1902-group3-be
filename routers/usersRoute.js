@@ -4,7 +4,7 @@ const { readToken } = require("../supports/enkripsi");
 
 router.get(`/`, usersController.getData);
 router.patch(`/profile`, usersController.inputDataUser);
-router.patch(`/updatephoto`,readToken,usersController.updateImageProfile);
+router.patch(`/updatephoto`,readToken,usersController.editPhoto);
 router.post(`/forgotpassword`, usersController.forgotpassword);
 router.post(`/newpassword`, readToken,usersController.newpassword);
 router.post(`/register`, usersController.register);
