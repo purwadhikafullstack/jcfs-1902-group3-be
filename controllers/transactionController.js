@@ -127,5 +127,34 @@ module.exports = {
                 error: error
             })
         }
+    },
+    checkout: async (req, res) => {
+        try {
+            let { idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date } = req.body
+            //insert table transaksi
+            let insertTransaction = await dbQuery(`INSERT INTO transaksi (iduser, idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date)
+            VALUES (${req.dataUser.iduser}, ${db.escape(idwarehouse)},
+             ${db.escape(idstatus)}, ${db.escape(invoice)}, ${db.escape(total_tagihan)},
+             ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
+             if(insertTransaction.insertId){
+                 //insert table detail transaksi
+                 await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, qty, catatan, sub_total)
+                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
+                  //delete data pada table cart
+                  await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
+
+                  res.status(200).send({
+                    message: 'success transaction',
+                    success: true
+                })
+             }
+        } catch (error) {
+            console.log('error')
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
     }
 }
