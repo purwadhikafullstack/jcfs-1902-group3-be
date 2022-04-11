@@ -5,9 +5,9 @@ module.exports = {
         try {
             let { qty, catatan, idproduct, idstock } = req.body
             console.log(req.body)
-            let getData = await dbQuery(`SELECT * FROM carts WHERE iduser='28' AND idproduct=${idproduct} AND idstock=${idstock} `)
+            let getData = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser} AND idproduct=${idproduct} AND idstock=${idstock} `)
             if (getData.length == 0) {
-                await dbQuery(`INSERT INTO carts VALUES (null, 28, ${req.body.idproduct}, ${req.body.idstock},  ${db.escape(qty)}, ${db.escape(catatan)})`)
+                await dbQuery(`INSERT INTO carts VALUES (null, ${req.dataUser.iduser}, ${req.body.idproduct}, ${req.body.idstock},  ${db.escape(qty)}, ${db.escape(catatan)})`)
             }else {
                 await dbQuery(`UPDATE carts SET qty=${getData[0].qty + qty} WHERE idcart=${getData[0].idcart}`)
             }
@@ -26,7 +26,7 @@ module.exports = {
     },
     getCart: async (req,res) => {
         try {
-            let resultCart = await dbQuery(`SELECT * FROM carts WHERE iduser=28`)
+            let resultCart = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser}`)
             let resultProducts = await dbQuery(`SELECT idproduct, nama, harga, deskripsi FROM products`)
             let resultImages = await dbQuery(`SELECT * FROM images`)
             let resultStocks = await dbQuery(`SELECT * FROM stocks`)
