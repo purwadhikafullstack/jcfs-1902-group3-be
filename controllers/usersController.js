@@ -4,7 +4,11 @@ const { uploader } = require('../supports/uploader');
 const { hashPassword, createToken } = require("../supports/enkripsi");
 const { transporter } = require("../supports/nodemailer");
 const Crypto = require(`crypto`);
+const { default: axios } = require("axios");
 
+axios.defaults.baseURL = 'https://api.rajaongkir.com/starter'
+axios.defaults.headers.common['key'] = 'e16ebfa0c9d8e75186df8a9122d40fa4'
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 module.exports = {
     getData: (req, res, next) => {
@@ -403,8 +407,7 @@ module.exports = {
     },
     getAddress: async (req, res) => {
         try {
-            console.log("req.dataUser getAddress ", req.dataUser)
-            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)};`)
+            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)} ORDER BY idstatus ;`)
             res.status(200).send({
                 success: true,
                 address: getAddress,
@@ -413,7 +416,7 @@ module.exports = {
         } catch (error) {
             console.log('Get Address failed', error)
             res.status(500).send({
-                success: failed,
+                success: false,
                 message: 'Get Address error',
                 error
             });
@@ -421,10 +424,20 @@ module.exports = {
     },
     addAddress: async (req, res) => {
         try {
-            let { iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos } = req.body
-            let insertAddress = await dbQuery(`insert into address (iduser, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
+            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota } = req.body
+            let provinsi,kota
+            let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
+            let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`) 
+            if(getProvinsi && getkota){
+               provinsi = getProvinsi.data.rajaongkir.results.province
+               kota = getkota.data.rajaongkir.results.city_name
+
+            }
+            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
                 ${db.escape(req.dataUser.iduser)},
-                1,
+                ${db.escape(idprovinsi)},
+                ${db.escape(idkota)},
+                5,
                 ${db.escape(nama_penerima)},
                 ${db.escape(alamat)},
                 ${db.escape(no_telpon)},
@@ -493,7 +506,15 @@ module.exports = {
     },
     chooseAddress: async (req, res) => {
         try {
-            await dbQuery(`update users set idaddress=${db.escape(req.body.idaddress)} where iduser=${db.escape(req.dataUser.iduser)}`)
+            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
+            if(getAlamat.length > 0) {
+                getAlamat.forEach(async(item,index) => {
+                    await dbQuery(`UPDATE address SET idstatus=5 WHERE idaddress=${item.idaddress}`)
+                })
+
+                await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${req.params.idaddress}`)
+            }
+            console.log('isi req body',req.body)
             res.status(200).send({
                 success: true,
                 message: "choose address success",
