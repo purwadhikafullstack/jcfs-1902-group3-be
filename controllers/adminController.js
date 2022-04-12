@@ -13,11 +13,29 @@ axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded
 module.exports = {
     getWarehouse: async (req, res) => {
         try {
+            // let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
             let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
             res.status(200).send({
                 success: true,
                 warehouse: getWarehouse,
-                message: 'Get Address Success'
+                message: 'Get Warehouse Success'
+            });
+        } catch (error) {
+            console.log('Get Address failed', error)
+            res.status(500).send({
+                success: false,
+                message: 'Get Warehouse error',
+                error
+            });
+        }
+    },
+    getAdmin: async (req, res) => {
+        try {
+            let getAdmin = await dbQuery(`SELECT u.*, w.nama FROM users u join warehouse w on u.idwarehouse = w.idwarehouse where idrole=2 and idstatus=1;`)
+            res.status(200).send({
+                success: true,
+                getAdmin: getAdmin,
+                message: 'Get Admin Success'
             });
         } catch (error) {
             console.log('Get Address failed', error)
@@ -30,7 +48,7 @@ module.exports = {
     },
     addWarehouse: async (req, res) => {
         try {
-            let { nama, alamat, kecamatan, kode_pos, idprovinsi, idkota } = req.body
+            let { nama, alamat, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
             let provinsi, kota
             let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
             let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`)
@@ -39,7 +57,7 @@ module.exports = {
                 kota = getkota.data.rajaongkir.results.city_name
 
             }
-            let insertWarehouse = await dbQuery(`insert into warehouse ( idprovinsi, idkota, nama, alamat, provinsi, kota, kecamatan, kode_pos) values(                
+            let insertWarehouse = await dbQuery(`insert into warehouse ( idprovinsi, idkota, nama, alamat, provinsi, kota, kecamatan, kode_pos, latitude, longitude) values(                
                 ${db.escape(idprovinsi)},
                 ${db.escape(idkota)},                
                 ${db.escape(nama)},
@@ -47,7 +65,9 @@ module.exports = {
                 ${db.escape(provinsi)},
                 ${db.escape(kota)},
                 ${db.escape(kecamatan)},
-                ${db.escape(kode_pos)}
+                ${db.escape(kode_pos)},
+                ${db.escape(latitude)},
+                ${db.escape(longitude)}
             );`)
 
             res.status(200).send({
@@ -63,18 +83,21 @@ module.exports = {
             })
         }
     },
+    
     addAdmin: async (req, res) => {
         try {
-            let { password, email, username } = req.body
+            let { password, email, username, idwarehouse, no_telpon } = req.body
             let getEmail = `Select * from users WHERE email = ${db.escape(email)};`
             let getUsername = `Select * from users WHERE username = ${db.escape(username)};`
-            let insertSQL = `Insert into users (email, password, idrole, username, photo, idstatus) values (
+            let insertSQL = `Insert into users (email, password, idrole, username, photo, idstatus, idwarehouse, no_telpon) values (
                 ${db.escape(email)}, 
                 ${db.escape(hashPassword(password))},
                 2,                                
                 ${db.escape(username)},
                 '/imgProfile/defaultPP.png',   
-                1             
+                1,
+                ${db.escape(idwarehouse)},
+                ${db.escape(no_telpon)}            
                 );`
             let checkusername = await dbQuery(getUsername)
             let checkmail = await dbQuery(getEmail)
