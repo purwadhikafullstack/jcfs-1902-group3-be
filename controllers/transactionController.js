@@ -1,5 +1,7 @@
 const { db, dbQuery } = require('../supports/database')
 const axios = require('axios')
+const { uploader } = require('../supports/uploader')
+const fs = require('fs')
 
 axios.defaults.baseURL = 'https://api.rajaongkir.com/starter'
 axios.defaults.headers.common['key'] = 'e16ebfa0c9d8e75186df8a9122d40fa4'
@@ -136,20 +138,80 @@ module.exports = {
             VALUES (${req.dataUser.iduser}, ${db.escape(idwarehouse)},
              ${db.escape(idstatus)}, ${db.escape(invoice)}, ${db.escape(total_tagihan)},
              ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
-             if(insertTransaction.insertId){
-                 //insert table detail transaksi
-                 await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, qty, catatan, sub_total)
+            if (insertTransaction.insertId) {
+                //insert table detail transaksi
+                await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, qty, catatan, sub_total)
                   VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
-                  //delete data pada table cart
-                  await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
+                //delete data pada table cart
+                await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
 
-                  res.status(200).send({
+                res.status(200).send({
                     message: 'success transaction',
                     success: true
                 })
-             }
+            }
         } catch (error) {
             console.log('error')
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    getTransaksi: async (req, res) => {
+        try {
+            let getTransaksi = await dbQuery(`SELECT * FROM transaksi WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND idstatus=${db.escape(req.query.idstatus)}` : ''}`)
+            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, i.url as images FROM products as p 
+            JOIN detail_transaksi AS dt ON dt.idproduct = p.idproduct 
+            JOIN images as i ON i.idproduct = p.idproduct;`)
+
+            getTransaksi.forEach((item, index) => {
+                item.detail = []
+                getDetail.forEach((item2, index) => {
+                    if (item2.idtransaksi == item.idtransaksi) {
+                        item.detail.push(item2)
+                    }
+                })
+            })
+
+            res.status(200).send({
+                success: true,
+                message: 'get transactions success',
+                dataTransaksi: getTransaksi
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    unggahReceipt: async (req, res) => {
+        try {
+            const unggahTF = uploader('/imgReceipt', 'IMGREC').fields([{ name: 'data' }])
+            unggahTF(req, res, async (error) => {
+                try {
+                    let {date} = JSON.parse(req.body.date)
+                    await dbQuery(`UPDATE transaksi SET idstatus=7, receipt='imgReceipt/${req.files.data[0].filename}', updated_date=${db.escape(date)}  WHERE idtransaksi=${req.params.idtransaksi}`)
+                    res.status(200).send({
+                        success: true,
+                        message: 'upload receipt success'
+                    })
+                } catch (error) {
+                    console.log('error')
+                    fs.unlinkSync(`./public/imgReceipt/${req.files.images[0].filename}`)
+                    res.status(500).send({
+                        success: false,
+                        message: 'failed',
+                        error: error
+                    })
+                }
+            })
+        } catch (error) {
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
