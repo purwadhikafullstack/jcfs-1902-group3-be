@@ -161,7 +161,11 @@ module.exports = {
     },
     getTransaksi: async (req, res) => {
         try {
-            let getTransaksi = await dbQuery(`SELECT * FROM transaksi WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND idstatus=${db.escape(req.query.idstatus)}` : ''}`)
+            let getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
+             JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
+             JOIN status as s ON s.idstatus = t.idstatus 
+             WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND idstatus=${db.escape(req.query.idstatus)}` : ''}`)
+             
             let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, i.url as images FROM products as p 
             JOIN detail_transaksi AS dt ON dt.idproduct = p.idproduct 
             JOIN images as i ON i.idproduct = p.idproduct;`)
@@ -202,7 +206,7 @@ module.exports = {
                     })
                 } catch (error) {
                     console.log('error')
-                    fs.unlinkSync(`./public/imgReceipt/${req.files.images[0].filename}`)
+                    fs.unlinkSync(`./public/imgReceipt/${req.files.data[0].filename}`)
                     res.status(500).send({
                         success: false,
                         message: 'failed',
