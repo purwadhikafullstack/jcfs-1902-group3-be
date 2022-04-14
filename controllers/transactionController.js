@@ -166,9 +166,9 @@ module.exports = {
              JOIN status as s ON s.idstatus = t.idstatus 
              WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND idstatus=${db.escape(req.query.idstatus)}` : ''}`)
              
-            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, i.url as images FROM products as p 
-            JOIN detail_transaksi AS dt ON dt.idproduct = p.idproduct 
-            JOIN images as i ON i.idproduct = p.idproduct;`)
+            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, MAX(i.url) as images FROM detail_transaksi as dt 
+            JOIN products AS p ON dt.idproduct = p.idproduct 
+            JOIN images as i ON i.idproduct = p.idproduct GROUP BY dt.iddetail_transaksi;`)
 
             getTransaksi.forEach((item, index) => {
                 item.detail = []
