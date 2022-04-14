@@ -14,7 +14,7 @@ module.exports = {
     getWarehouse: async (req, res) => {
         try {
             // let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
-            let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
+            let getWarehouse = await dbQuery(`SELECT * FROM warehouse where idstatus = 1;`)
             res.status(200).send({
                 success: true,
                 warehouse: getWarehouse,
@@ -31,7 +31,7 @@ module.exports = {
     },
     getAdmin: async (req, res) => {
         try {
-            let getAdmin = await dbQuery(`SELECT u.*, w.nama FROM users u join warehouse w on u.idwarehouse = w.idwarehouse where idrole=2 and idstatus=1;`)
+            let getAdmin = await dbQuery(`SELECT u.*, w.nama FROM users u join warehouse w on u.idwarehouse = w.idwarehouse where idrole=2 and u.idstatus=1;`)
             res.status(200).send({
                 success: true,
                 getAdmin: getAdmin,
@@ -57,7 +57,7 @@ module.exports = {
                 kota = getkota.data.rajaongkir.results.city_name
 
             }
-            let insertWarehouse = await dbQuery(`insert into warehouse ( idprovinsi, idkota, nama, alamat, provinsi, kota, kecamatan, kode_pos, latitude, longitude) values(                
+            let insertWarehouse = await dbQuery(`insert into warehouse ( idprovinsi, idkota, nama, alamat, provinsi, kota, kecamatan, kode_pos, latitude, longitude, idstatus) values(                
                 ${db.escape(idprovinsi)},
                 ${db.escape(idkota)},                
                 ${db.escape(nama)},
@@ -67,7 +67,8 @@ module.exports = {
                 ${db.escape(kecamatan)},
                 ${db.escape(kode_pos)},
                 ${db.escape(latitude)},
-                ${db.escape(longitude)}
+                ${db.escape(longitude)},
+                1
             );`)
 
             res.status(200).send({
@@ -83,7 +84,6 @@ module.exports = {
             })
         }
     },
-    
     addAdmin: async (req, res) => {
         try {
             let { password, email, username, idwarehouse, no_telpon } = req.body
@@ -103,7 +103,7 @@ module.exports = {
             let checkmail = await dbQuery(getEmail)
             console.log("checkmail length", checkmail.length)
             console.log("checkusername", checkusername.length)
-            console.log("cek geAdmin", )
+            console.log("cek geAdmin",)
             if (checkmail.length > 0 || checkusername.length > 0) {
                 if (checkmail.length > 0) {
                     res.status(400).send({
@@ -138,4 +138,118 @@ module.exports = {
             });
         }
     },
+    deleteAdmin: async (req, res) => {
+        try {
+            console.log(`cek dataUser`, req.dataUser)
+            if (req.dataUser.idrole == 1) {
+                await dbQuery(`update users set idstatus = 2 where iduser=${req.params.iduser};`)
+                res.status(200).send({
+                    success: true,
+                    message: "Success Delete Admin"
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: "You can't access this API"
+                })
+            }
+        } catch (error) {
+            res.status(500).send({
+                success: false,
+                message: `Failed`,
+                error: error
+            })
+        }
+    },
+    deleteWarehouse: async (req, res) => {
+        try {
+            console.log(`cek dataUser`, req.dataUser)
+            if (req.dataUser.idrole == 1) {
+                await dbQuery(`update warehouse set idstatus = 2 where idwarehouse=${req.params.idwarehouse};`)
+                res.status(200).send({
+                    success: true,
+                    message: "Success Delete Warehouse"
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: "You can't access this API"
+                })
+            }
+        } catch (error) {
+            res.status(500).send({
+                success: false,
+                message: `Failed`,
+                error: error
+            })
+        }
+    },
+    updateAdmin: async (req, res) => {
+        try {
+            let { email, username, idwarehouse, no_telpon } = req.body
+            if (req.dataUser.idrole == 1) {
+                let updateAdmin = await dbQuery(`update users set
+                username = ${db.escape(username)},
+                email = ${db.escape(email)},
+                no_telpon = ${db.escape(no_telpon)},
+                idwarehouse = ${db.escape(idwarehouse)}
+                where iduser = ${req.params.iduser}
+                ;`)
+
+                res.status(200).send({
+                    success: true,
+                    message: "Update Admin Success",
+                    data: updateAdmin
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: "You can't access this API"
+                })
+            }
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    },
+    updateWarehouse: async (req, res) => {
+        try {
+            let { nama, alamat, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
+            if (req.dataUser.idrole == 1) {
+                let updateWarehouse = await dbQuery(`update warehouse set
+                nama = ${db.escape(nama)},
+                alamat = ${db.escape(alamat)},
+                kecamatan = ${db.escape(kecamatan)},
+                kode_pos = ${db.escape(kode_pos)},
+                idprovinsi = ${db.escape(idprovinsi)},
+                idkota = ${db.escape(idkota)},
+                latitude = ${db.escape(latitude)},
+                longitude = ${db.escape(longitude)}
+                where idwarehouse = ${req.params.idwarehouse}
+                ;`)
+
+                res.status(200).send({
+                    success: true,
+                    message: "Update Warehouse Success",
+                    data: updateWarehouse
+                })
+            } else {
+                res.status(401).send({
+                    success: false,
+                    message: "You can't access this API"
+                })
+            }
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: "Failed",
+                error: error
+            })
+        }
+    }
 }
