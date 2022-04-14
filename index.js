@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const https = require('https');
+const fs = require("fs");
 const dotenv = require('dotenv');
 const bearerToken = require("express-bearer-token")
 dotenv.config();
@@ -41,3 +43,7 @@ app.use('/admin', adminRoute)
 app.use('/warehouse', warehouseRoute)
 
 app.listen(PORT, () => console.log("Your API RUNNING :", PORT));
+https.createServer({
+    key: fs.readFileSync('./ssl/server.key'),
+    cert: fs.readFileSync('./ssl/server.cert')
+}, app).listen(2023, () => console.log("Woodavenue API Running :", 2023));
