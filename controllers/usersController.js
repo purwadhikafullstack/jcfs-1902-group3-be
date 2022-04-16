@@ -37,7 +37,7 @@ module.exports = {
             }
             if (results.length > 0) {
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
+                let token = createToken({ iduser, idrole, idwarehouse, idaddress,idstatus, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
@@ -168,7 +168,7 @@ module.exports = {
             console.log("ni bang dari keepLogin",results[0])
             if (results.length > 0) {
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
+                let token = createToken({ iduser, idrole, idwarehouse, idaddress,idstatus, username, email })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,

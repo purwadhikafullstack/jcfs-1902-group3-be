@@ -9,23 +9,33 @@ module.exports = {
                 const uploadFile = uploader('/imgProducts', 'IMGPRO').array('images', 5);
                 uploadFile(req, res, async (error) => {
                     try {
-                        console.log('isi req.body', req.body);
-                        console.log('cek uploadfile :', req.files);
+                        // console.log('isi req.body', req.body);
+                        // console.log('cek uploadfile :', req.files);
                         let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi, stock, date } = JSON.parse(req.body.data)
-                        let query_insert = `INSERT INTO products (idmaterial,idkategori,idjenis_product,idstatus,nama,harga,deskripsi,berat,added_date) 
-                        VALUES (${idmaterial}, ${idkategori}, ${idjenis_product}, 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
-                        let insertProduct = await dbQuery(query_insert);
-
-                        if (insertProduct.insertId) {
-                            for (let i = 0; i < req.files.length; i++) {
-                                await dbQuery(`INSERT INTO images VALUES(null,${insertProduct.insertId}, 'imgProducts/${req.files[i].filename}');`)
-                            }
-                            await dbQuery(`INSERT INTO stocks VALUES (null,${insertProduct.insertId},null, ${db.escape(stock)});`)
-
+                        let checkProduct = await dbQuery(`SELECT * FROM products WHERE nama LIKE ${db.escape(`%${nama}%`)} AND idmaterial=${db.escape(idmaterial)};`)
+                        if (checkProduct.length > 0) {
+                            req.files.forEach(item => fs.unlinkSync(`./public/imgProducts/${item.filename}`))
+                            await dbQuery(`INSERT INTO stocks VALUES (null,${checkProduct[0].idproduct}, ${db.escape(req.dataUser.idwarehouse)}, ${db.escape(stock)});`)
                             res.status(200).send({
                                 message: 'success add product',
                                 success: true,
                             })
+                        } else {
+                            let query_insert = `INSERT INTO products (idmaterial,idkategori,idjenis_product,idstatus,nama,harga,deskripsi,berat,added_date) 
+                            VALUES (${idmaterial}, ${idkategori}, ${idjenis_product}, 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
+                            let insertProduct = await dbQuery(query_insert);
+    
+                            if (insertProduct.insertId) {
+                                for (let i = 0; i < req.files.length; i++) {
+                                    await dbQuery(`INSERT INTO images VALUES(null,${insertProduct.insertId}, 'imgProducts/${req.files[i].filename}');`)
+                                }
+                                await dbQuery(`INSERT INTO stocks VALUES (null,${insertProduct.insertId}, ${db.escape(req.dataUser.idwarehouse)}, ${db.escape(stock)});`)
+    
+                                res.status(200).send({
+                                    message: 'success add product',
+                                    success: true,
+                                })
+                            }
                         }
                     } catch (error) {
                         console.log(error)
