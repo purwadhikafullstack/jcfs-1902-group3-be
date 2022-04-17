@@ -164,7 +164,7 @@ module.exports = {
             let getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
              JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
              JOIN status as s ON s.idstatus = t.idstatus 
-             WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND idstatus=${db.escape(req.query.idstatus)}` : ''} ORDER BY t.idtransaksi DESC`)
+             WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND t.idstatus=${db.escape(req.query.idstatus)}` : ''} ORDER BY t.idtransaksi DESC`)
              
             let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, MAX(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
