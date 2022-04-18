@@ -474,12 +474,12 @@ module.exports = {
     },
     chooseAddress: async (req, res) => {
         try {
-            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
+            await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
+            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser} AND idaddress!=${db.escape(req.params.idaddress)}`)
             if(getAlamat.length > 0) {
                 getAlamat.forEach(async(item,index) => {
                     await dbQuery(`UPDATE address SET idstatus=5 WHERE idaddress=${item.idaddress}`)
                 })
-                await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
             }
             // console.log('isi req body',req.body)
             res.status(200).send({
