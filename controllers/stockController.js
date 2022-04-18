@@ -8,7 +8,7 @@ module.exports = {
                 filterQuery.push(`${prop == 'nama' ? `p.nama LIKE ${db.escape(`%${req.query[prop]}%`)}` : ''}`)
             }
             let getTotalSumStock = await dbQuery(`SELECT p.nama, sum(s.qty) as stok FROM stocks as s 
-            JOIN products as p ON s.idproduct = p.idproduct ${filterQuery.length > 0 ? `where ${filterQuery.join('AND')}` : ''} GROUP BY p.nama`)
+            JOIN products as p ON s.idproduct = p.idproduct WHERE p.idstatus='1' ${filterQuery.length > 0 ? `AND ${filterQuery.join('AND')}` : ''} GROUP BY p.nama`)
 
             if(getTotalSumStock.length > 0) {
                 res.status(200).send({
