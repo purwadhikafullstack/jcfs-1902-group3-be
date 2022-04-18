@@ -165,7 +165,7 @@ module.exports = {
              JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
              JOIN status as s ON s.idstatus = t.idstatus 
              WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND t.idstatus=${db.escape(req.query.idstatus)}` : ''} ORDER BY t.idtransaksi DESC`)
-             
+
             let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, MAX(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
             JOIN images as i ON i.idproduct = p.idproduct GROUP BY dt.iddetail_transaksi;`)
@@ -198,7 +198,7 @@ module.exports = {
             const unggahTF = uploader('/imgReceipt', 'IMGREC').fields([{ name: 'data' }])
             unggahTF(req, res, async (error) => {
                 try {
-                    let {date} = JSON.parse(req.body.date)
+                    let { date } = JSON.parse(req.body.date)
                     await dbQuery(`UPDATE transaksi SET idstatus=7, receipt='imgReceipt/${req.files.data[0].filename}', updated_date=${db.escape(date)}  WHERE idtransaksi=${req.params.idtransaksi}`)
                     res.status(200).send({
                         success: true,
