@@ -172,7 +172,7 @@ module.exports = {
             let getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
              JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
              JOIN status as s ON s.idstatus = t.idstatus 
-             WHERE iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.idtransaksi DESC`)
+             WHERE iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
 
             let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, MAX(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
@@ -221,6 +221,22 @@ module.exports = {
                         error: error
                     })
                 }
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    UserTerimaBarang: async (req,res) => {
+        try {
+            await dbQuery(`UPDATE transaksi SET idstatus=9, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
+            res.status(200).send({
+                success: true,
+                message: 'Terima Barang success'
             })
         } catch (error) {
             console.log(error)
