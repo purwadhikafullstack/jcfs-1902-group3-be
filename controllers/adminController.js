@@ -219,6 +219,15 @@ module.exports = {
     updateWarehouse: async (req, res) => {
         try {
             let { nama, alamat, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
+            let provinsi, kota
+            let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
+            let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`)
+            if (getProvinsi && getkota) {
+                provinsi = getProvinsi.data.rajaongkir.results.province
+                kota = getkota.data.rajaongkir.results.city_name
+
+            }
+            console.log('req body update warehouse', req.body)
             if (req.dataUser.idrole == 1) {
                 let updateWarehouse = await dbQuery(`update warehouse set
                 nama = ${db.escape(nama)},
@@ -228,7 +237,9 @@ module.exports = {
                 idprovinsi = ${db.escape(idprovinsi)},
                 idkota = ${db.escape(idkota)},
                 latitude = ${db.escape(latitude)},
-                longitude = ${db.escape(longitude)}
+                longitude = ${db.escape(longitude)},
+                provinsi = ${db.escape(provinsi)},
+                kota = ${db.escape(kota)}
                 where idwarehouse = ${req.params.idwarehouse}
                 ;`)
 
