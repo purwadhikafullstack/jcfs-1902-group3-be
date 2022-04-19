@@ -11,7 +11,7 @@ module.exports = {
                     try {
                         // console.log('isi req.body', req.body);
                         // console.log('cek uploadfile :', req.files);
-                        let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi, stock, date } = JSON.parse(req.body.data)
+                        let { idmaterial, idkategori, idjenis_product, idstatus, nama, harga, deskripsi, stock, berat, date } = JSON.parse(req.body.data)
                         let checkProduct = await dbQuery(`SELECT * FROM products WHERE nama LIKE ${db.escape(`%${nama}%`)} AND idmaterial=${db.escape(idmaterial)};`)
                         if (checkProduct.length > 0) {
                             req.files.forEach(item => fs.unlinkSync(`./public/imgProducts/${item.filename}`))
@@ -22,7 +22,7 @@ module.exports = {
                             })
                         } else {
                             let query_insert = `INSERT INTO products (idmaterial,idkategori,idjenis_product,idstatus,nama,harga,deskripsi,berat,added_date) 
-                            VALUES (${idmaterial}, ${idkategori}, ${idjenis_product}, 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)},  ${db.escape(date)});`
+                            VALUES (${idmaterial}, ${idkategori}, ${idjenis_product}, 1, ${db.escape(nama)}, ${db.escape(harga)}, ${db.escape(deskripsi)}, ${db.escape(berat)}, ${db.escape(date)});`
                             let insertProduct = await dbQuery(query_insert);
 
                             if (insertProduct.insertId) {
@@ -255,7 +255,7 @@ module.exports = {
             // console.log('isi query', query_get)
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
-            let resultsStock = await dbQuery(`SELECT * FROM stocks`)
+            let resultsStock = await dbQuery(`SELECT * FROM stocks WHERE idwarehouse=${req.dataUser.idwarehouse}`)
             let resultsMaterial = await dbQuery(`SELECT * FROM material`)
 
             resultsProduct.forEach((item, index) => {
