@@ -7,4 +7,5 @@ router.post('/', readToken, productController.addproduct)
 router.patch('/:idproduct', readToken, productController.updateProduct)
 router.patch('/image/:idimage', readToken, productController.updateImageProduct)
 router.delete('/:idproduct', readToken, productController.softDelete)
+router.get('/admin', readToken, productController.getProductAdminWarehouse)
 module.exports = router

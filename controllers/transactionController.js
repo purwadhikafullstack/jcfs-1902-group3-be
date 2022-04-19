@@ -132,7 +132,7 @@ module.exports = {
     },
     checkout: async (req, res) => {
         try {
-            let { idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date } = req.body
+            let { idwarehouse, idstatus, idaddress, invoice, total_tagihan, ongkir, pajak, added_date } = req.body
             //insert table transaksi
             let insertTransaction = await dbQuery(`INSERT INTO transaksi (iduser, idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date)
             VALUES (${req.dataUser.iduser}, ${db.escape(idwarehouse)},
@@ -140,8 +140,8 @@ module.exports = {
              ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
             if (insertTransaction.insertId) {
                 //insert table detail transaksi
-                await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, qty, catatan, sub_total)
-                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
+                await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, idaddress, qty, catatan, sub_total)
+                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(idaddress)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
                 //delete data pada table cart
                 await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
 
@@ -151,7 +151,7 @@ module.exports = {
                 })
             }
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -161,13 +161,22 @@ module.exports = {
     },
     getTransaksi: async (req, res) => {
         try {
+            filterQuery = []
+            for (prop in req.query) {
+                if (prop == 'fromDate' || prop == 'toDate') {
+                    filterQuery.push(`added_date ${prop == 'fromDate' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                } else {
+                    filterQuery.push(`${prop == 'idstatus' ? 't.idstatus' : prop}=${db.escape(req.query[prop])}`)
+                }
+            }
             let getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
              JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
-             JOIN status as s ON s.idstatus = t.idstatus 
-             WHERE iduser=${req.dataUser.iduser} ${req.query.idstatus ? `AND t.idstatus=${db.escape(req.query.idstatus)}` : ''} ORDER BY t.idtransaksi DESC`)
+             JOIN status as s ON s.idstatus = t.idstatus
+             WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
 
-            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, MAX(i.url) as images FROM detail_transaksi as dt 
+            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MAX(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
+            JOIN address as a ON a.idaddress = dt.idaddress
             JOIN images as i ON i.idproduct = p.idproduct GROUP BY dt.iddetail_transaksi;`)
 
             getTransaksi.forEach((item, index) => {
@@ -213,6 +222,22 @@ module.exports = {
                         error: error
                     })
                 }
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    UserTerimaBarang: async (req,res) => {
+        try {
+            await dbQuery(`UPDATE transaksi SET idstatus=9, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
+            res.status(200).send({
+                success: true,
+                message: 'Terima Barang success'
             })
         } catch (error) {
             console.log(error)
