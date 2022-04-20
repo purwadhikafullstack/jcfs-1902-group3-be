@@ -162,19 +162,34 @@ module.exports = {
     getTransaksi: async (req, res) => {
         try {
             filterQuery = []
+            let getTransaksi
             for (prop in req.query) {
                 if (prop == 'fromDate' || prop == 'toDate') {
                     filterQuery.push(`added_date ${prop == 'fromDate' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
                 } else {
-                    filterQuery.push(`${prop == 'idstatus' ? 't.idstatus' : prop}=${db.escape(req.query[prop])}`)
+                    filterQuery.push(`${prop == 'idstatus' ? 't.idstatus' : prop == 'idwarehouse' ? 't.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
                 }
             }
-            let getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
-             JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
-             JOIN status as s ON s.idstatus = t.idstatus
-             WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
-
-            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MAX(i.url) as images FROM detail_transaksi as dt 
+            if (req.dataUser.idrole == 1) {
+                getTransaksi = await dbQuery(`SELECT t.*, u.nama as pembeli, w.nama as warehouse, s.status FROM transaksi as t
+                JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
+                JOIN status as s ON s.idstatus = t.idstatus
+                JOIN users as u ON u.iduser = t.iduser
+                ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
+            } else if (req.dataUser.idrole == 2) {
+                getTransaksi = await dbQuery(`SELECT t.*, u.nama as pembeli , w.nama as warehouse, s.status FROM transaksi as t
+                JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
+                JOIN status as s ON s.idstatus = t.idstatus
+                JOIN users as u ON u.iduser = t.iduser
+                WHERE t.idwarehouse=${req.dataUser.idwarehouse} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
+            } else if (req.dataUser.idrole == 3) {
+                getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
+                JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
+                JOIN status as s ON s.idstatus = t.idstatus
+                WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
+        
+            }
+           let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MAX(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
             JOIN address as a ON a.idaddress = dt.idaddress
             JOIN images as i ON i.idproduct = p.idproduct GROUP BY dt.iddetail_transaksi;`)
@@ -232,7 +247,7 @@ module.exports = {
             })
         }
     },
-    UserTerimaBarang: async (req,res) => {
+    UserTerimaBarang: async (req, res) => {
         try {
             await dbQuery(`UPDATE transaksi SET idstatus=9, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
             res.status(200).send({
