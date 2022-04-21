@@ -28,7 +28,7 @@ db.getConnection((err, connection) => {
 
 app.get(`/`, (req, res) => res.status(200).send(`<h2>Welcome to woodavenue API</h2>`))
 
-const { usersRoute, productRoute, kategoriRoute, materialRoute, jenisProductRoute, stockRoute, transactionRoute, addressRoute, adminRoute, warehouseRoute } = require('./routers')
+const { usersRoute, productRoute, kategoriRoute, materialRoute, jenisProductRoute, stockRoute, transactionRoute, addressRoute, adminRoute, warehouseRoute, transactionWarehouseRoute } = require('./routers')
 
 
 app.use(`/users`, usersRoute);
@@ -41,6 +41,7 @@ app.use('/transactions', transactionRoute)
 app.use('/alamat', addressRoute)
 app.use('/admin', adminRoute)
 app.use('/warehouse', warehouseRoute)
+app.use('/transactionwarehouse', transactionWarehouseRoute)
 
 app.listen(PORT, () => console.log("Your API RUNNING :", PORT));
 https.createServer({

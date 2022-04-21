@@ -7,7 +7,9 @@ const stockRoute  = require('./stockRoute')
 const transactionRoute  = require('./transactionRoute')
 const addressRoute  = require('./addressRoute')
 const adminRoute  = require('./adminRoute')
-const warehouseRoute  = require('./warehouseRoute')
+const warehouseRoute  = require('./warehouseRoute');
+const transactionWarehouseRoute = require('./transactionWarehouseRoute')
+
 
 module.exports = {
     usersRoute,
@@ -19,5 +21,6 @@ module.exports = {
     transactionRoute,
     addressRoute,
     adminRoute,
-    warehouseRoute
+    warehouseRoute,
+    transactionWarehouseRoute
 }
