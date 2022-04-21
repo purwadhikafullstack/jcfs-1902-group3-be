@@ -247,9 +247,9 @@ module.exports = {
             })
         }
     },
-    UserTerimaBarang: async (req, res) => {
+    konfirmasiPesanan: async (req, res) => {
         try {
-            await dbQuery(`UPDATE transaksi SET idstatus=9, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
+            await dbQuery(`UPDATE transaksi SET idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
             res.status(200).send({
                 success: true,
                 message: 'Terima Barang success'
