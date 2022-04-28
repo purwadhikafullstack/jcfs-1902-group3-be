@@ -392,7 +392,7 @@ module.exports = {
     },
     addAddress: async (req, res) => {
         try {
-            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota } = req.body
+            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
             let provinsi,kota
             let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
             let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`) 
@@ -401,7 +401,7 @@ module.exports = {
                kota = getkota.data.rajaongkir.results.city_name
 
             }
-            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
+            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos, latitude, longitude) values(
                 ${db.escape(req.dataUser.iduser)},
                 ${db.escape(idprovinsi)},
                 ${db.escape(idkota)},
@@ -412,7 +412,9 @@ module.exports = {
                 ${db.escape(provinsi)},
                 ${db.escape(kota)},
                 ${db.escape(kecamatan)},
-                ${db.escape(kode_pos)}
+                ${db.escape(kode_pos)},
+                ${db.escape(latitude)},
+                ${db.escape(longitude)}
             );`)
 
             res.status(200).send({
