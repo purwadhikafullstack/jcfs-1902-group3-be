@@ -184,7 +184,7 @@ module.exports = {
             JOIN jenis_products as j ON p.idjenis_product = j.idjenis_product
             WHERE p.idstatus='1'
             ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
-            ${sort && order ? `ORDER BY ${sort} ${order}` : ''};`
+            ${sort && order ? `ORDER BY ${sort} ${order}` : 'ORDER BY added_date DESC'}  ;`
             // console.log('isi query', query_get)
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
@@ -251,7 +251,7 @@ module.exports = {
             JOIN stocks as st ON st.idproduct = p.idproduct
             WHERE p.idstatus='1' AND st.idwarehouse=${req.dataUser.idwarehouse}
             ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
-            ${sort && order ? `ORDER BY ${sort} ${order}` : ''};`
+            ${sort && order ? `ORDER BY ${sort} ${order}` : 'ORDER BY added_date DESC'};`
             // console.log('isi query', query_get)
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
