@@ -37,11 +37,11 @@ module.exports = {
             }
             if (results.length > 0) {
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
+                let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress, token },
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress, idwarehouse, token },
                     err: ``
                 })
             } else {
@@ -122,10 +122,10 @@ module.exports = {
             console.log("req.dataUser", req.dataUser)
             let { iduser } = req.dataUser
             if (iduser) {
-                await dbQuery(`UPDATE users SET idstatus = 3 WHERE iduser = ${db.escape(iduser)}`)                
-                let verify = await dbQuery(`Select * from users WHERE iduser=${db.escape(iduser)};`)                
+                await dbQuery(`UPDATE users SET idstatus = 3 WHERE iduser = ${db.escape(iduser)}`)
+                let verify = await dbQuery(`Select * from users WHERE iduser=${db.escape(iduser)};`)
                 if (verify.length > 0) {
-                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo,idstatus, idaddress } = verify[0];
+                    let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = verify[0];
                     // let token = createToken({ iduser, username, email })
                     let token = createToken({ iduser, nama, gender, username, umur, email, no_telpon, photo })
                     // let token = createToken({ iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo,idstatus, idaddress })
@@ -165,14 +165,14 @@ module.exports = {
                     error: err
                 })
             };
-            console.log("ni bang dari keepLogin",results[0])
+            console.log("ni bang dari keepLogin", results[0])
             if (results.length > 0) {
-                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idaddress,idstatus, username, email })
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
+                let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
-                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress, token },
+                    dataLogin: { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress, idwarehouse, token },
                     err: ``
                 })
             } else {
@@ -260,8 +260,8 @@ module.exports = {
     editPhoto: async (req, res) => {
         try {
             const uploadFile = uploader('/imgProfile', 'IMGPROFILE').array("photo", 1);
-            uploadFile(req, res, async(error)=> {
-                let {photo} = req.body
+            uploadFile(req, res, async (error) => {
+                let { photo } = req.body
                 console.log("req body umur", req.body.photo)
                 let updatePhoto = await dbQuery(`Update users set photo=${req.files[0] ? db.escape(`/imgProfile/${req.files[0].filename}`) : db.escape(photo)} where iduser=${db.escape(req.dataUser.iduser)};`)
                 res.status(200).send({
@@ -375,7 +375,7 @@ module.exports = {
     },
     getAddress: async (req, res) => {
         try {
-            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)} ${req.query.idstatus ? `AND idstatus=${req.query.idstatus}` : '' } ORDER BY idstatus ;`)
+            let getAddress = await dbQuery(`SELECT * FROM address WHERE iduser=${db.escape(req.dataUser.iduser)} ${req.query.idstatus ? `AND idstatus=${req.query.idstatus}` : ''} ORDER BY idstatus ;`)
             res.status(200).send({
                 success: true,
                 address: getAddress,
@@ -393,12 +393,12 @@ module.exports = {
     addAddress: async (req, res) => {
         try {
             let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota } = req.body
-            let provinsi,kota
+            let provinsi, kota
             let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
-            let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`) 
-            if(getProvinsi && getkota){
-               provinsi = getProvinsi.data.rajaongkir.results.province
-               kota = getkota.data.rajaongkir.results.city_name
+            let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`)
+            if (getProvinsi && getkota) {
+                provinsi = getProvinsi.data.rajaongkir.results.province
+                kota = getkota.data.rajaongkir.results.city_name
 
             }
             let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
@@ -474,9 +474,9 @@ module.exports = {
     },
     chooseAddress: async (req, res) => {
         try {
-            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
-            if(getAlamat.length > 0) {
-                getAlamat.forEach(async(item,index) => {
+            let getAlamat = await dbQuery(`SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
+            if (getAlamat.length > 0) {
+                getAlamat.forEach(async (item, index) => {
                     await dbQuery(`UPDATE address SET idstatus=5 WHERE idaddress=${item.idaddress}`)
                 })
                 await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
