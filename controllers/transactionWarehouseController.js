@@ -104,26 +104,61 @@ module.exports = {
             })
         }
     },
+    getRequest: async (req, res) => {
+        try {
+            let dataRequest = await dbQuery(
+                `Select tw.*, w.nama FROM transaksi_warehouse as tw
+                JOIN warehouse as w ON tw.idkota=w.idkota
+                where tw.idwarehouse=${req.dataUser.idwarehouse}`)
+            let resultImages = await dbQuery(`Select * FROM images`)
+
+            dataRequest.forEach((item,index) => {
+                item.images = []
+
+                resultImages.forEach((item2, index)=>{
+                    if(item.idproduct == item2.idproduct){
+                        item.images.push(item2)
+                    }
+                })
+            })
+            res.status(200).send({
+                success:true,
+                message:`get data success`,
+                dataRequest: dataRequest
+            })
+        } catch (error) {
+            console.log('error')
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
     checkoutAdmin: async (req, res) => {
         try {
-            let { idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date } = req.body
+            let { iduser, idwarehouse, idstatus, idproduct, idstock, idprovinsi, idkota, stock ,invoice, ongkir, added_date } = req.body
             //insert table transaksi
-            let insertTransaction = await dbQuery(`INSERT INTO transaksi_warehouse (iduser, idwarehouse, idstatus, invoice, total_tagihan, ongkir, pajak, added_date)
-            VALUES (${req.dataUser.iduser}, ${db.escape(idwarehouse)},
-             ${db.escape(idstatus)}, ${db.escape(invoice)}, ${db.escape(total_tagihan)},
-             ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
-            if (insertTransaction.insertId) {
-                //insert table detail transaksi
-                await dbQuery(`INSERT INTO detail_transaksi_warehouse (idtransaksi_warehouse, idwarehouse, idproduct, idstock, qty, catatan, sub_total)
-                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId},${db.escape(item.idwarehouse)}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
-                //delete data pada table cart
-                await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
+            let insertTransaction = await dbQuery(`INSERT INTO transaksi_warehouse (iduser, idwarehouse, idstatus, invoice, idproduct, idstock, idprovinsi, idkota, ongkir, added_date, stock)
+            VALUES (${db.escape(iduser)}, ${db.escape(idwarehouse)},
+             ${db.escape(idstatus)}, ${db.escape(invoice)},             
+             ${db.escape(idproduct)}, ${db.escape(idstock)},             
+             ${db.escape(idprovinsi)}, ${db.escape(idkota)},             
+             ${db.escape(ongkir)}, ${db.escape(added_date)},
+             ${db.escape(stock)});`)
+             
+             res.status(200).send({
+                 message: 'success transaction',
+                 success: true
+             })
+            // if (insertTransaction.insertId) {
+            //     //insert table detail transaksi
+            //     await dbQuery(`INSERT INTO detail_transaksi_warehouse (idtransaksi_warehouse, idwarehouse, idproduct, idstock, qty, catatan, sub_total)
+            //       VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId},${db.escape(item.idwarehouse)}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
+            //     //delete data pada table cart
+            //     await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
 
-                res.status(200).send({
-                    message: 'success transaction',
-                    success: true
-                })
-            }
+            // }
         } catch (error) {
             console.log('error')
             res.status(500).send({
@@ -151,4 +186,64 @@ module.exports = {
             });
         }
     },
+    getProductAdmin: async (req, res) => {
+        try {
+            // let filterQuery = []
+            // for (prop in req.query) {
+            //     if (req.query[prop]) {
+            //         filterQuery.push(` ${prop == 'idwarehouse' ? `s.${prop}` : `${prop} LIKE %${req.query[prop]}%`}`)
+            //     }
+            // }
+            // console.log('isi filter query', filterQuery)            
+            let query_get = `SELECT s.*, w.idprovinsi, w.idkota, w.idstatus as status_warehouse, w.nama as nama_warehouse, w.alamat, w.provinsi, w.kota, p.idmaterial, p.idkategori, p.idjenis_product, p.idstatus as status_product, p.nama as nama_product, p.harga, p.deskripsi, p.berat, p.added_date, p.updated_date, k.kategori, j.jenis_product, j.url as url_jenis_product, m.material, m.url as url_material FROM stocks as s
+            JOIN warehouse as w ON s.idwarehouse = w.idwarehouse
+            JOIN products as p ON s.idproduct = p.idproduct
+            JOIN kategori as k ON p.idkategori = k.idkategori
+            JOIN jenis_products j ON p.idjenis_product = j.idjenis_product
+            JOIN material as m ON p.idmaterial = m.idmaterial            
+            WHERE p.idstatus = '1' ${req.query.idwarehouse ? `AND s.idwarehouse = ${req.query.idwarehouse}` :`AND s.idwarehouse = 1`} 
+            ${req.query.idproduct ? `AND s.idproduct = ${req.query.idproduct}` : ``};`
+            // ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''};`
+            // console.log('isi query', query_get)
+            let resultsProduct = await dbQuery(query_get)
+            let resultsImage = await dbQuery(`SELECT * FROM images`)
+            // let resultsStock = await dbQuery(`SELECT * FROM stocks`)
+            let resultsMaterial = await dbQuery(`SELECT * FROM material`)
+
+            resultsProduct.forEach((item, index) => {
+                item.images = [];
+                // item.stock = [];
+                item.material = [];
+                resultsImage.forEach(item2 => {
+                    if (item.idproduct == item2.idproduct) {
+                        // delete item2.idproduct
+                        item.images.push(item2)
+                    }
+                })
+                // resultsStock.forEach(item3 => {
+                //     if (item3.idproduct == item.idproduct) {
+                //         delete item3.idproduct
+                //         item.stock.push(item3)
+                //     }
+                // })
+                resultsMaterial.forEach((item4, index) => {
+                    if (item4.idmaterial == item.idmaterial) {
+                        item.material.push(item4)
+                    }
+                })
+            })
+            res.status(200).send({
+                message: 'get data product success',
+                success: true,
+                dataProduct: resultsProduct
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    }
 }
