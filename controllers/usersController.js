@@ -38,6 +38,7 @@ module.exports = {
             if (results.length > 0) {
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
                 let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
+
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
@@ -167,8 +168,10 @@ module.exports = {
             };
             console.log("ni bang dari keepLogin", results[0])
             if (results.length > 0) {
+
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
                 let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
+
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
@@ -392,8 +395,9 @@ module.exports = {
     },
     addAddress: async (req, res) => {
         try {
-            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota } = req.body
-            let provinsi, kota
+
+            let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
+            let provinsi, kota;
             let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
             let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`)
             if (getProvinsi && getkota) {
@@ -401,7 +405,7 @@ module.exports = {
                 kota = getkota.data.rajaongkir.results.city_name
 
             }
-            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos) values(
+            let insertAddress = await dbQuery(`insert into address (iduser, idprovinsi, idkota, idstatus, nama_penerima, alamat, no_telpon, provinsi, kota, kecamatan, kode_pos, latitude, longitude) values(
                 ${db.escape(req.dataUser.iduser)},
                 ${db.escape(idprovinsi)},
                 ${db.escape(idkota)},
@@ -412,7 +416,9 @@ module.exports = {
                 ${db.escape(provinsi)},
                 ${db.escape(kota)},
                 ${db.escape(kecamatan)},
-                ${db.escape(kode_pos)}
+                ${db.escape(kode_pos)},
+                ${db.escape(latitude)},
+                ${db.escape(longitude)}
             );`)
 
             res.status(200).send({
@@ -474,12 +480,12 @@ module.exports = {
     },
     chooseAddress: async (req, res) => {
         try {
-            let getAlamat = await dbQuery(`SELECT * FROM address WHERE iduser=${req.dataUser.iduser}`)
-            if (getAlamat.length > 0) {
-                getAlamat.forEach(async (item, index) => {
+            await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
+            let getAlamat = await dbQuery( `SELECT * FROM address WHERE iduser=${req.dataUser.iduser} AND idaddress!=${db.escape(req.params.idaddress)}`)
+            if(getAlamat.length > 0) {
+                getAlamat.forEach(async(item,index) => {
                     await dbQuery(`UPDATE address SET idstatus=5 WHERE idaddress=${item.idaddress}`)
                 })
-                await dbQuery(`UPDATE address SET idstatus=${db.escape(req.body.idstatus)} WHERE idaddress=${db.escape(req.params.idaddress)}`)
             }
             // console.log('isi req body',req.body)
             res.status(200).send({
