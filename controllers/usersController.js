@@ -37,7 +37,8 @@ module.exports = {
             }
             if (results.length > 0) {
                 let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idwarehouse, idaddress,idstatus, username, email })
+                let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
+
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
@@ -167,8 +168,10 @@ module.exports = {
             };
             console.log("ni bang dari keepLogin", results[0])
             if (results.length > 0) {
-                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus,idaddress } = results[0]
-                let token = createToken({ iduser, idrole, idwarehouse, idaddress,idstatus, username, email })
+
+                let { iduser, idrole, idwarehouse, nama, gender, username, umur, email, no_telpon, photo, idstatus, idaddress } = results[0]
+                let token = createToken({ iduser, idrole, idaddress, idstatus, username, email, idwarehouse })
+
                 res.status(200).send({
                     success: true,
                     message: `Login Success`,
@@ -392,8 +395,9 @@ module.exports = {
     },
     addAddress: async (req, res) => {
         try {
+
             let { nama_penerima, alamat, no_telpon, kecamatan, kode_pos, idprovinsi, idkota, latitude, longitude } = req.body
-            let provinsi,kota
+            let provinsi, kota;
             let getProvinsi = await axios.get(`/province?id=${idprovinsi}`)
             let getkota = await axios.get(`/city?id=${idkota}&province=${idprovinsi}`)
             if (getProvinsi && getkota) {
