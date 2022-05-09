@@ -168,6 +168,48 @@ module.exports = {
             })
         }
     },
+    konfirmasiRequest: async (req, res) => {
+        try {
+            let dataRequest = await dbQuery(`select * FROM transaksi_warehouse
+            where idwarehouse=${req.dataUser.idwarehouse};`)
+            await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
+
+            dataRequest.forEach( async (item, index)=>{
+                let getStock = await dbQuery(`SELECT * from stocks where idproduct=${item.idproduct} and idwarehouse=${item.idwarehouse}`)
+                let sisaStock = getStock[0].qty-item.stock
+                await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${item.idstock}`)                
+            })
+
+            res.status(200).send({
+                success:true,
+                message:`konfirmasi success`                
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    rejectRequest: async (req,res) => {
+        try {
+            await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
+
+            res.status(200).send({
+                success:true,
+                message:`reject request success`                
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
     getWarehouseAdmin: async (req, res) => {
         try {
             // let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
