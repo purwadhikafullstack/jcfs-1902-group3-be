@@ -117,21 +117,23 @@ module.exports = {
             }
             if (req.dataUser.idrole == 2) {
                 dataRequest = await dbQuery(
-                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
-                    JOIN warehouse as w ON tw.idkota=w.idkota
+                    `Select tw.*, w.nama, p.nama as nama_product, u.username FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idwarehouse=w.idwarehouse
                     JOIN products as p ON tw.idproduct=p.idproduct
+                    JOIN users as u ON tw.iduser=u.iduser
                     where tw.idwarehouse=${req.dataUser.idwarehouse}
                     ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
                     ORDER BY tw.idtransaksi_warehouse DESC`)
-            }else if ( req.dataUser.idrole == 1){
+            } else if (req.dataUser.idrole == 1) {
                 dataRequest = await dbQuery(
-                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
-                    JOIN warehouse as w ON tw.idkota=w.idkota
-                    JOIN products as p ON tw.idproduct=p.idproduct                    
+                    `Select tw.*, w.nama, p.nama as nama_product, u.username FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idwarehouse=w.idwarehouse
+                    JOIN products as p ON tw.idproduct=p.idproduct  
+                    JOIN users as u ON tw.iduser=u.iduser                  
                     ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''}
                     ORDER BY tw.idtransaksi_warehouse DESC`)
             }
-            let resultImages = await dbQuery(`Select * FROM images`)            
+            let resultImages = await dbQuery(`Select * FROM images`)
             dataRequest.forEach((item, index) => {
                 item.images = []
 
@@ -141,7 +143,7 @@ module.exports = {
                     }
                 })
             })
-            res.status(200).send({                
+            res.status(200).send({
                 success: true,
                 message: `get data success`,
                 dataRequest: dataRequest
@@ -171,11 +173,11 @@ module.exports = {
                     `Select tw.*, w.nama, p.nama as nama_product, u.username as nama_pengirim FROM transaksi_warehouse as tw
                     JOIN warehouse as w ON tw.idkota=w.idkota
                     JOIN products as p ON tw.idproduct=p.idproduct
-                    JOIN users as u ON tw.iduser=u.iduser
+                    JOIN users as u ON tw.idwarehouse=u.idwarehouse
                     where tw.iduser=${req.dataUser.iduser}
                     ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
                     ORDER BY tw.idtransaksi_warehouse DESC`)
-            }else if ( req.dataUser.idrole == 1){
+            } else if (req.dataUser.idrole == 1) {
                 dataRequest = await dbQuery(
                     `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
                     JOIN warehouse as w ON tw.idkota=w.idkota
@@ -183,7 +185,7 @@ module.exports = {
                     ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''}
                     ORDER BY tw.idtransaksi_warehouse DESC`)
             }
-            let resultImages = await dbQuery(`Select * FROM images`)            
+            let resultImages = await dbQuery(`Select * FROM images`)
             dataRequest.forEach((item, index) => {
                 item.images = []
 
@@ -246,15 +248,54 @@ module.exports = {
             where idwarehouse=${req.dataUser.idwarehouse};`)
             await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
 
+            let getStock = await dbQuery(`SELECT * from stocks where idproduct=${req.params.idproduct} and idwarehouse=${req.dataUser.idwarehouse}`)
+            let sisaStock
             dataRequest.forEach(async (item, index) => {
-                let getStock = await dbQuery(`SELECT * from stocks where idproduct=${item.idproduct} and idwarehouse=${item.idwarehouse}`)
-                let sisaStock = getStock[0].qty - item.stock
-                await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${item.idstock}`)
+                // if(item.idproduct == getStock[0].idproduct){
+                sisaStock = getStock[0].qty - item.stock
+                console.log(`getStock`, getStock)
+                console.log(`getStockArray`, getStock[0])
+                console.log(`sisaStock`, sisaStock)
+                // }
             })
+            await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${req.params.idstock} and idproduct=${req.params.idproduct}`)
 
             res.status(200).send({
                 success: true,
                 message: `konfirmasi success`
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    diterimaRequest: async (req, res) => {
+        try {
+            let dataRequest = await dbQuery(`select * FROM transaksi_warehouse
+            where iduser=${req.dataUser.iduser};`)
+            await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
+            let getStock = await dbQuery(`SELECT * from stocks where idproduct=${req.params.idproduct} and idwarehouse=${req.dataUser.idwarehouse}`)
+            if (getStock.length > 0) {
+                let totalStock
+                dataRequest.forEach(async (item, index) => {
+                    totalStock = getStock[0].qty + item.stock
+                })
+                await dbQuery(`UPDATE stocks SET qty=${totalStock} where idwarehouse=${req.dataUser.idwarehouse} and idproduct=${req.params.idproduct}`)
+            } else {
+                await dbQuery(`INSERT into stocks (idproduct, idwarehouse, qty) values (
+                    ${db.escape(req.params.idproduct)},
+                    ${db.escape(req.dataUser.idwarehouse)},
+                    ${db.escape(req.body.qty)}
+                    );`)
+            }
+
+            res.status(200).send({
+                success: true,
+                message: `Barang Diterima success`
             })
         } catch (error) {
             console.log(error)
