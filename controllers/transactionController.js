@@ -250,6 +250,14 @@ module.exports = {
     konfirmasiPesanan: async (req, res) => {
         try {
             await dbQuery(`UPDATE transaksi SET idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
+            getTransaksi = await dbQuery(`SELECT * FROM transaksi WHERE idtransaksi=${req.params.idtransaksi} AND idwarehouse=${db.escape(req.body.idwarehouse)}`)
+            if (getTransaksi[0].idstatus === 8){
+                getStockUpdate = await dbQuery(`SELECT s.*, dt.qty as stock_berkurang FROM stocks as s JOIN detail_transaksi as dt ON dt.idstock = s.idstock WHERE dt.idtransaksi=${req.params.idtransaksi}`)
+                getStockUpdate.forEach( async (item,index) => {
+                    await dbQuery(`UPDATE stocks SET qty=${item.qty - item.stock_berkurang} WHERE idproduct=${item.idproduct} AND idwarehouse=${db.escape(req.body.idwarehouse)} `)
+                    // console.log(`UPDATE stocks SET qty=${item.qty - item.stock_berkurang} WHERE idproduct=${item.idproduct} AND idwarehouse=${db.escape(req.body.idwarehouse)}`)
+                })
+            }
             res.status(200).send({
                 success: true,
                 message: 'Terima Barang success'
