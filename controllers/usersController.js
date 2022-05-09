@@ -99,7 +99,7 @@ module.exports = {
                         subject: 'Confirm Registration',
                         html: `<div>
                         <h3>Klik link dibawah ini untuk verifikasi akun anda</h3>
-                        <a href='http://localhost:3000/verification/${token}'>Klik Disini</a>
+                        <a href='https://fancy-dodol-349b30.netlify.app/verification/${token}'>Klik Disini</a>
                         </div>`
                     })
                     res.status(200).send({
@@ -333,7 +333,7 @@ module.exports = {
                 subject: "Reset Password",
                 html: `<div>
                         <h3>Klik Link dibawah ini untuk Reset Password anda</h3>
-                        <a href='http://localhost:3000/resetpassword/${token}'>Click, Here to Reset Password</a>
+                        <a href='https://fancy-dodol-349b30.netlify.app/resetpassword/${token}'>Click, Here to Reset Password</a>
                         </div>`
             })
             res.status(200).send({
