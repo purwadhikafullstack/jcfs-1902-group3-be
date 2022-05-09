@@ -106,28 +106,100 @@ module.exports = {
     },
     getRequest: async (req, res) => {
         try {
-            let dataRequest = await dbQuery(
-                `Select tw.*, w.nama FROM transaksi_warehouse as tw
-                JOIN warehouse as w ON tw.idkota=w.idkota
-                where tw.idwarehouse=${req.dataUser.idwarehouse}`)
-            let resultImages = await dbQuery(`Select * FROM images`)
-
-            dataRequest.forEach((item,index) => {
+            filterQuery = []
+            let dataRequest
+            for (prop in req.query) {
+                if (prop == 'fromDate' || prop == 'toDate') {
+                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<'} ${db.escape(req.query[prop])}`)
+                } else {
+                    filterQuery.push(`${prop == 'idstatus' ? 'tw.idstatus' : prop == 'idwarehouse' ? 'tw.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
+                }
+            }
+            if (req.dataUser.idrole == 2) {
+                dataRequest = await dbQuery(
+                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idkota=w.idkota
+                    JOIN products as p ON tw.idproduct=p.idproduct
+                    where tw.idwarehouse=${req.dataUser.idwarehouse}
+                    ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
+                    ORDER BY tw.idtransaksi_warehouse DESC`)
+            }else if ( req.dataUser.idrole == 1){
+                dataRequest = await dbQuery(
+                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idkota=w.idkota
+                    JOIN products as p ON tw.idproduct=p.idproduct                    
+                    ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''}
+                    ORDER BY tw.idtransaksi_warehouse DESC`)
+            }
+            let resultImages = await dbQuery(`Select * FROM images`)            
+            dataRequest.forEach((item, index) => {
                 item.images = []
 
-                resultImages.forEach((item2, index)=>{
-                    if(item.idproduct == item2.idproduct){
+                resultImages.forEach((item2, index) => {
+                    if (item.idproduct == item2.idproduct) {
+                        item.images.push(item2)
+                    }
+                })
+            })
+            res.status(200).send({                
+                success: true,
+                message: `get data success`,
+                dataRequest: dataRequest
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({
+                success: false,
+                message: 'failed',
+                error: error
+            })
+        }
+    },
+    outgoingRequest: async (req, res) => {
+        try {
+            filterQuery = []
+            let dataRequest
+            for (prop in req.query) {
+                if (prop == 'fromDate' || prop == 'toDate') {
+                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                } else {
+                    filterQuery.push(`${prop == 'idstatus' ? 'tw.idstatus' : prop == 'idwarehouse' ? 'tw.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
+                }
+            }
+            if (req.dataUser.idrole == 2) {
+                dataRequest = await dbQuery(
+                    `Select tw.*, w.nama, p.nama as nama_product, u.username as nama_pengirim FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idkota=w.idkota
+                    JOIN products as p ON tw.idproduct=p.idproduct
+                    JOIN users as u ON tw.iduser=u.iduser
+                    where tw.iduser=${req.dataUser.iduser}
+                    ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
+                    ORDER BY tw.idtransaksi_warehouse DESC`)
+            }else if ( req.dataUser.idrole == 1){
+                dataRequest = await dbQuery(
+                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idkota=w.idkota
+                    JOIN products as p ON tw.idproduct=p.idproduct                    
+                    ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''}
+                    ORDER BY tw.idtransaksi_warehouse DESC`)
+            }
+            let resultImages = await dbQuery(`Select * FROM images`)            
+            dataRequest.forEach((item, index) => {
+                item.images = []
+
+                resultImages.forEach((item2, index) => {
+                    if (item.idproduct == item2.idproduct) {
                         item.images.push(item2)
                     }
                 })
             })
             res.status(200).send({
-                success:true,
-                message:`get data success`,
+                success: true,
+                message: `get data success`,
                 dataRequest: dataRequest
             })
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -137,7 +209,7 @@ module.exports = {
     },
     checkoutAdmin: async (req, res) => {
         try {
-            let { iduser, idwarehouse, idstatus, idproduct, idstock, idprovinsi, idkota, stock ,invoice, ongkir, added_date } = req.body
+            let { iduser, idwarehouse, idstatus, idproduct, idstock, idprovinsi, idkota, stock, invoice, ongkir, added_date } = req.body
             //insert table transaksi
             let insertTransaction = await dbQuery(`INSERT INTO transaksi_warehouse (iduser, idwarehouse, idstatus, invoice, idproduct, idstock, idprovinsi, idkota, ongkir, added_date, stock)
             VALUES (${db.escape(iduser)}, ${db.escape(idwarehouse)},
@@ -146,11 +218,11 @@ module.exports = {
              ${db.escape(idprovinsi)}, ${db.escape(idkota)},             
              ${db.escape(ongkir)}, ${db.escape(added_date)},
              ${db.escape(stock)});`)
-             
-             res.status(200).send({
-                 message: 'success transaction',
-                 success: true
-             })
+
+            res.status(200).send({
+                message: 'success transaction',
+                success: true
+            })
             // if (insertTransaction.insertId) {
             //     //insert table detail transaksi
             //     await dbQuery(`INSERT INTO detail_transaksi_warehouse (idtransaksi_warehouse, idwarehouse, idproduct, idstock, qty, catatan, sub_total)
@@ -174,15 +246,15 @@ module.exports = {
             where idwarehouse=${req.dataUser.idwarehouse};`)
             await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
 
-            dataRequest.forEach( async (item, index)=>{
+            dataRequest.forEach(async (item, index) => {
                 let getStock = await dbQuery(`SELECT * from stocks where idproduct=${item.idproduct} and idwarehouse=${item.idwarehouse}`)
-                let sisaStock = getStock[0].qty-item.stock
-                await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${item.idstock}`)                
+                let sisaStock = getStock[0].qty - item.stock
+                await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${item.idstock}`)
             })
 
             res.status(200).send({
-                success:true,
-                message:`konfirmasi success`                
+                success: true,
+                message: `konfirmasi success`
             })
         } catch (error) {
             console.log(error)
@@ -193,13 +265,13 @@ module.exports = {
             })
         }
     },
-    rejectRequest: async (req,res) => {
+    rejectRequest: async (req, res) => {
         try {
             await dbQuery(`UPDATE transaksi_warehouse set idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} where idtransaksi_warehouse=${req.params.idtransaksi_warehouse}`)
 
             res.status(200).send({
-                success:true,
-                message:`reject request success`                
+                success: true,
+                message: `reject request success`
             })
         } catch (error) {
             console.log(error)
@@ -243,7 +315,7 @@ module.exports = {
             JOIN kategori as k ON p.idkategori = k.idkategori
             JOIN jenis_products j ON p.idjenis_product = j.idjenis_product
             JOIN material as m ON p.idmaterial = m.idmaterial            
-            WHERE p.idstatus = '1' ${req.query.idwarehouse ? `AND s.idwarehouse = ${req.query.idwarehouse}` :`AND s.idwarehouse = 1`} 
+            WHERE p.idstatus = '1' ${req.query.idwarehouse ? `AND s.idwarehouse = ${req.query.idwarehouse}` : `AND s.idwarehouse = 1`} 
             ${req.query.idproduct ? `AND s.idproduct = ${req.query.idproduct}` : ``};`
             // ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''};`
             // console.log('isi query', query_get)
