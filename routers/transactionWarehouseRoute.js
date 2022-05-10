@@ -9,7 +9,8 @@ router.get('/outgoingrequest', readToken, transactionWarehouseController.outgoin
 router.get('/getwarehouseadmin', readToken, transactionWarehouseController.getWarehouseAdmin)
 router.post('/checkoutadmin', readToken, transactionWarehouseController.checkoutAdmin)
 router.get('/', readToken, transactionWarehouseController.getProductAdmin)
-router.patch('/konfirmasi/:idtransaksi_warehouse', readToken, transactionWarehouseController.konfirmasiRequest)
+router.patch('/konfirmasi/:idtransaksi_warehouse/:idproduct/:idstock', readToken, transactionWarehouseController.konfirmasiRequest)
+router.patch('/diterima/:idtransaksi_warehouse/:idproduct/:idstock', readToken, transactionWarehouseController.diterimaRequest)
 router.patch('/reject/:idtransaksi_warehouse', readToken, transactionWarehouseController.rejectRequest)
 
 module.exports = router
