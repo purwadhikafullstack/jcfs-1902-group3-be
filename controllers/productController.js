@@ -165,7 +165,7 @@ module.exports = {
         try {
             let filterQuery = []
             for (prop in req.query) {
-                if (prop != 'sort' && prop != 'order') {
+                if (prop != 'sort' && prop != 'order' && prop != 'limit') {
                     if (prop == 'harga_min' || prop == 'harga_max') {
                         if (req.query[prop]) {
                             filterQuery.push(`harga ${prop == 'harga_min' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
@@ -176,7 +176,7 @@ module.exports = {
                 }
             }
             // console.log('isi filter query', filterQuery)
-            let { sort, order, status } = req.query
+            let { sort, order, status, limit } = req.query
             let query_get = `SELECT p.*, m.material, k.kategori, j.jenis_product, s.status from products as p 
             JOIN status as s ON p.idstatus = s.idstatus
             JOIN material as m ON p.idmaterial = m.idmaterial
@@ -184,7 +184,8 @@ module.exports = {
             JOIN jenis_products as j ON p.idjenis_product = j.idjenis_product
             WHERE p.idstatus='1'
             ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''}
-            ${sort && order ? `ORDER BY ${sort} ${order}` : 'ORDER BY added_date DESC'}  ;`
+            ${sort && order ? `ORDER BY ${sort} ${order}` : 'ORDER BY added_date DESC'}
+            ${limit ? `LIMIT ${limit}` : ''};`
             // console.log('isi query', query_get)
             let resultsProduct = await dbQuery(query_get)
             let resultsImage = await dbQuery(`SELECT * FROM images`)
