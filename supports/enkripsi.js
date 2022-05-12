@@ -9,7 +9,7 @@ module.exports = {
         return jwt.sign(payload, process.env.TOKEN_KEY)
     },
     readToken: (req,res,next)=>{
-        console.log(req.token);
+        // console.log(req.token);
         jwt.verify(req.token, process.env.TOKEN_KEY,(err,decode)=>{
             if(err){
                 res.status(401).send({
@@ -17,7 +17,7 @@ module.exports = {
                     success : false,
                 })
             }
-            console.log('decode',decode);
+            // console.log('decode',decode);
             req.dataUser = decode;
             next()
         })

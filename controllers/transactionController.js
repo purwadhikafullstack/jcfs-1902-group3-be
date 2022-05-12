@@ -12,9 +12,9 @@ module.exports = {
         try {
             let { qty, catatan, idproduct, idstock } = req.body
             console.log(req.body)
-            let getData = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser} AND idproduct=${idproduct} AND idstock=${idstock} `)
+            let getData = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser} AND idproduct=${idproduct}`)
             if (getData.length == 0) {
-                await dbQuery(`INSERT INTO carts VALUES (null, ${req.dataUser.iduser}, ${req.body.idproduct}, ${req.body.idstock},  ${db.escape(qty)}, ${db.escape(catatan)})`)
+                await dbQuery(`INSERT INTO carts VALUES (null, ${req.dataUser.iduser}, ${req.body.idproduct}, ${req.body.total_stock_product},  ${db.escape(qty)}, ${db.escape(catatan)})`)
             } else {
                 await dbQuery(`UPDATE carts SET qty=${getData[0].qty + qty} WHERE idcart=${getData[0].idcart}`)
             }
@@ -23,7 +23,7 @@ module.exports = {
                 message: 'add to cart success',
             })
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -36,12 +36,10 @@ module.exports = {
             let resultCart = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser}`)
             let resultProducts = await dbQuery(`SELECT idproduct, nama, harga, deskripsi, berat FROM products`)
             let resultImages = await dbQuery(`SELECT * FROM images`)
-            let resultStocks = await dbQuery(`SELECT * FROM stocks`)
 
             resultCart.forEach((item, index) => {
                 item.products = []
                 item.images = []
-                item.stocks = []
 
                 resultProducts.forEach((item2, index) => {
                     if (item.idproduct == item2.idproduct) {
@@ -53,10 +51,6 @@ module.exports = {
                         item.images.push(item3)
                     }
                 })
-                resultStocks.forEach((item4, index) => {
-                    if (item.idproduct == item4.idproduct)
-                        item.stocks.push(item4)
-                })
             })
 
             res.status(200).send({
@@ -66,7 +60,7 @@ module.exports = {
             })
 
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -83,7 +77,7 @@ module.exports = {
                 success: true
             })
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -100,7 +94,7 @@ module.exports = {
                 success: true
             })
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -122,7 +116,7 @@ module.exports = {
                 dataOngkir: response.data.rajaongkir.results[0]
             })
         } catch (error) {
-            console.log('error')
+            console.log(error)
             res.status(500).send({
                 success: false,
                 message: 'failed',
@@ -140,8 +134,8 @@ module.exports = {
              ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
             if (insertTransaction.insertId) {
                 //insert table detail transaksi
-                await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idstock, idaddress, qty, catatan, sub_total)
-                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(idaddress)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
+                await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idaddress, qty, catatan, sub_total)
+                  VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(idaddress)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
                 //delete data pada table cart
                 await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
 
@@ -165,7 +159,7 @@ module.exports = {
             let getTransaksi
             for (prop in req.query) {
                 if (prop == 'fromDate' || prop == 'toDate') {
-                    filterQuery.push(`added_date ${prop == 'fromDate' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                    filterQuery.push(`added_date ${prop == 'fromDate' ? '>=' : '<='} ${prop == 'toDate' ? db.escape(`${req.query[prop]} 23:59:59`) : db.escape(`${req.query[prop]} 00:00:00`)}`)
                 } else {
                     filterQuery.push(`${prop == 'idstatus' ? 't.idstatus' : prop == 'idwarehouse' ? 't.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
                 }
@@ -187,9 +181,9 @@ module.exports = {
                 JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
                 JOIN status as s ON s.idstatus = t.idstatus
                 WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
-        
+
             }
-           let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MAX(i.url) as images FROM detail_transaksi as dt 
+            let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MIN(i.url) as images FROM detail_transaksi as dt 
             JOIN products AS p ON dt.idproduct = p.idproduct 
             JOIN address as a ON a.idaddress = dt.idaddress
             JOIN images as i ON i.idproduct = p.idproduct GROUP BY dt.iddetail_transaksi;`)
@@ -251,12 +245,20 @@ module.exports = {
         try {
             await dbQuery(`UPDATE transaksi SET idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
             getTransaksi = await dbQuery(`SELECT * FROM transaksi WHERE idtransaksi=${req.params.idtransaksi} AND idwarehouse=${db.escape(req.body.idwarehouse)}`)
-            if (getTransaksi[0].idstatus === 8){
-                getStockUpdate = await dbQuery(`SELECT s.*, dt.qty as stock_berkurang FROM stocks as s JOIN detail_transaksi as dt ON dt.idstock = s.idstock WHERE dt.idtransaksi=${req.params.idtransaksi}`)
-                getStockUpdate.forEach( async (item,index) => {
-                    await dbQuery(`UPDATE stocks SET qty=${item.qty - item.stock_berkurang} WHERE idproduct=${item.idproduct} AND idwarehouse=${db.escape(req.body.idwarehouse)} `)
-                    // console.log(`UPDATE stocks SET qty=${item.qty - item.stock_berkurang} WHERE idproduct=${item.idproduct} AND idwarehouse=${db.escape(req.body.idwarehouse)}`)
+            getStockWarehouse = await dbQuery(`SELECT * FROM stocks WHERE idwarehouse=${db.escape(req.body.idwarehouse)}`)
+            if (getTransaksi[0].idstatus === 8) {
+                getProductSold = await dbQuery(`SELECT dt.*, t.idwarehouse FROM detail_transaksi as dt
+                JOIN transaksi as t ON t.idtransaksi = dt.idtransaksi
+                where dt.idtransaksi=${db.escape(req.params.idtransaksi)};`)
+                getProductSold.forEach(async (item, index) => {
+                    getStockWarehouse.forEach(async (item2, index2) => {
+                        if (item2.idproduct == item.idproduct && item2.idwarehouse == item.idwarehouse) {
+                            await dbQuery(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                            console.log(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                        }
+                    })
                 })
+
             }
             res.status(200).send({
                 success: true,
