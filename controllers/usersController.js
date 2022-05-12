@@ -25,7 +25,8 @@ module.exports = {
     login: (req, res) => {
         let { password, email } = req.body
         // let hashPassword = Crypto.createHmac(`sha256`, `budi`).update(password).digest(`hex`);
-        let loginScript = `Select * from users WHERE email=${db.escape(email)} and password=${db.escape(hashPassword(password))};`
+        // Fixed login with username
+        let loginScript = `Select * from users WHERE (email=${db.escape(email)} or username=${db.escape(email)}) and password=${db.escape(hashPassword(password))};`
 
         db.query(loginScript, (err, results) => {
             if (err) {
