@@ -179,9 +179,10 @@ module.exports = {
                     ORDER BY tw.idtransaksi_warehouse DESC`)
             } else if (req.dataUser.idrole == 1) {
                 dataRequest = await dbQuery(
-                    `Select tw.*, w.nama, p.nama as nama_product FROM transaksi_warehouse as tw
-                    JOIN warehouse as w ON tw.idkota=w.idkota
-                    JOIN products as p ON tw.idproduct=p.idproduct                    
+                    `Select tw.*, w.nama, p.nama as nama_product, u.username as nama_pengirim FROM transaksi_warehouse as tw
+                    JOIN warehouse as w ON tw.idwarehouse=w.idwarehouse
+                    JOIN products as p ON tw.idproduct=p.idproduct
+                    JOIN users as u ON tw.idwarehouse=u.idwarehouse                    
                     ${filterQuery.length > 0 ? `WHERE ${filterQuery.join(" AND ")}` : ''}
                     ORDER BY tw.idtransaksi_warehouse DESC`)
             }
