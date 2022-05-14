@@ -14,7 +14,7 @@ module.exports = {
             console.log(req.body)
             let getData = await dbQuery(`SELECT * FROM carts WHERE iduser=${req.dataUser.iduser} AND idproduct=${idproduct}`)
             if (getData.length == 0) {
-                await dbQuery(`INSERT INTO carts VALUES (null, ${req.dataUser.iduser}, ${req.body.idproduct}, ${req.body.total_stock_product},  ${db.escape(qty)}, ${db.escape(catatan)})`)
+                await dbQuery(`INSERT INTO carts (idcart, iduser, idproduct, total_stock_product, qty, catatan) VALUES (null, ${req.dataUser.iduser}, ${req.body.idproduct}, ${req.body.total_stock_product},  ${db.escape(qty)}, null)`)
             } else {
                 await dbQuery(`UPDATE carts SET qty=${getData[0].qty + qty} WHERE idcart=${getData[0].idcart}`)
             }
@@ -132,12 +132,26 @@ module.exports = {
             VALUES (${req.dataUser.iduser}, ${db.escape(idwarehouse)},
              ${db.escape(idstatus)}, ${db.escape(invoice)}, ${db.escape(total_tagihan)},
              ${db.escape(ongkir)}, ${db.escape(pajak)}, ${db.escape(added_date)});`)
+            //get total stock product
+            getStockWarehouse = await dbQuery(`SELECT * FROM stocks WHERE idwarehouse=${db.escape(idwarehouse)}`)
             if (insertTransaction.insertId) {
                 //insert table detail transaksi
                 await dbQuery(`INSERT INTO detail_transaksi (idtransaksi, idproduct, idaddress, qty, catatan, sub_total)
                   VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId}, ${db.escape(item.idproduct)}, ${db.escape(idaddress)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
                 //delete data pada table cart
                 await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
+                //update stock product
+                getProductSold = await dbQuery(`SELECT dt.*, t.idwarehouse FROM detail_transaksi as dt
+                JOIN transaksi as t ON t.idtransaksi = dt.idtransaksi
+                where dt.idtransaksi=${db.escape(insertTransaction.insertId)};`)
+                getProductSold.forEach(async (item, index) => {
+                    getStockWarehouse.forEach(async (item2, index2) => {
+                        if (item2.idproduct == item.idproduct && item2.idwarehouse == item.idwarehouse) {
+                            await dbQuery(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                            console.log(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                        }
+                    })
+                })
 
                 res.status(200).send({
                     message: 'success transaction',
@@ -175,12 +189,12 @@ module.exports = {
                 JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
                 JOIN status as s ON s.idstatus = t.idstatus
                 JOIN users as u ON u.iduser = t.iduser
-                WHERE t.idwarehouse=${req.dataUser.idwarehouse} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
+                WHERE t.idwarehouse=${req.dataUser.idwarehouse} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.added_date DESC`)
             } else if (req.dataUser.idrole == 3) {
                 getTransaksi = await dbQuery(`SELECT t.*, w.nama as warehouse, s.status FROM transaksi as t
                 JOIN warehouse as w ON w.idwarehouse = t.idwarehouse 
                 JOIN status as s ON s.idstatus = t.idstatus
-                WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.updated_date DESC`)
+                WHERE t.iduser=${req.dataUser.iduser} ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''} ORDER BY t.added_date DESC`)
 
             }
             let getDetail = await dbQuery(`SELECT dt.*, p.nama, p.harga, a.nama_penerima, a.alamat, a.no_telpon, a.provinsi, a.kota, a.kecamatan, a.kode_pos, MIN(i.url) as images FROM detail_transaksi as dt 
@@ -246,15 +260,15 @@ module.exports = {
             await dbQuery(`UPDATE transaksi SET idstatus=${db.escape(req.body.idstatus)}, updated_date=${db.escape(req.body.date)} WHERE idtransaksi=${req.params.idtransaksi}`)
             getTransaksi = await dbQuery(`SELECT * FROM transaksi WHERE idtransaksi=${req.params.idtransaksi} AND idwarehouse=${db.escape(req.body.idwarehouse)}`)
             getStockWarehouse = await dbQuery(`SELECT * FROM stocks WHERE idwarehouse=${db.escape(req.body.idwarehouse)}`)
-            if (getTransaksi[0].idstatus === 8) {
+            if (getTransaksi[0].idstatus === 10) {
                 getProductSold = await dbQuery(`SELECT dt.*, t.idwarehouse FROM detail_transaksi as dt
                 JOIN transaksi as t ON t.idtransaksi = dt.idtransaksi
                 where dt.idtransaksi=${db.escape(req.params.idtransaksi)};`)
                 getProductSold.forEach(async (item, index) => {
                     getStockWarehouse.forEach(async (item2, index2) => {
                         if (item2.idproduct == item.idproduct && item2.idwarehouse == item.idwarehouse) {
-                            await dbQuery(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
-                            console.log(`UPDATE stocks SET qty=${item2.qty - item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                            await dbQuery(`UPDATE stocks SET qty=${item2.qty + item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
+                            console.log(`UPDATE stocks SET qty=${item2.qty + item.qty} WHERE idproduct=${item2.idproduct} AND idwarehouse=${req.body.idwarehouse}`)
                         }
                     })
                 })
