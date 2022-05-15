@@ -108,9 +108,9 @@ module.exports = {
         try {
             filterQuery = []
             let dataRequest
-            for (prop in req.query) {
+            for (prop in req.query) {                
                 if (prop == 'fromDate' || prop == 'toDate') {
-                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<'} ${db.escape(req.query[prop])}`)
+                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<='} ${prop == 'toDate' ? db.escape(`${req.query[prop]} 23:59:59`) : db.escape(`${req.query[prop]} 00:00:00`)}`)
                 } else {
                     filterQuery.push(`${prop == 'idstatus' ? 'tw.idstatus' : prop == 'idwarehouse' ? 'tw.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
                 }
@@ -161,9 +161,9 @@ module.exports = {
         try {
             filterQuery = []
             let dataRequest
-            for (prop in req.query) {
+            for (prop in req.query) {                
                 if (prop == 'fromDate' || prop == 'toDate') {
-                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<='} ${db.escape(req.query[prop])}`)
+                    filterQuery.push(`tw.added_date ${prop == 'fromDate' ? '>=' : '<='} ${prop == 'toDate' ? db.escape(`${req.query[prop]} 23:59:59`) : db.escape(`${req.query[prop]} 00:00:00`)}`)
                 } else {
                     filterQuery.push(`${prop == 'idstatus' ? 'tw.idstatus' : prop == 'idwarehouse' ? 'tw.idwarehouse' : prop}=${db.escape(req.query[prop])}`)
                 }
