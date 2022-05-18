@@ -6,38 +6,8 @@ const fs = require('fs')
 axios.defaults.baseURL = 'https://api.rajaongkir.com/starter'
 axios.defaults.headers.common['key'] = 'e16ebfa0c9d8e75186df8a9122d40fa4'
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
-//idcart, iduser, idpero
-module.exports = {
-    // requestStock: (req, res) => {
-    //     try {
-    //         let {idwarehouse, idproduct, invoice, total_harga, ongkir, catatan, added_date, updated_date} = req.body
-    //         let requestStock = `insert into transaksi_warehouse (iduser, idwarehouse, idproduct, idstatus, invoice, total_harga, ongkir, catatan, added_date, updated_date) values (
-    //             ${db.escape(req.dataUser.iduser)},                
-    //             ${db.escape(idwarehouse)},                
-    //             ${db.escape(idproduct)},                
-    //             7,
-    //             ${db.escape(invoice)},                
-    //             ${db.escape(total_harga)},                
-    //             ${db.escape(ongkir)},                
-    //             ${db.escape(catatan)},                
-    //             ${db.escape(added_date)}.DATE_ADD(now().interval 7 hour),                
-    //             ${db.escape(updated_date)}.DATE_ADD(now().interval 7 hour),                
-    //         );`
 
-    //         res.status(200).send({
-    //             message: 'success transaction',
-    //             success: true,
-    //             requestStock: requestStock
-    //         })
-    //     } catch (error) {
-    //         console.log(`cek request stock`,requestStock)
-    //         res.status(500).send({
-    //             success: false,
-    //             message: 'failed',
-    //             error: error
-    //         })
-    //     }
-    // },
+module.exports = {    
     addCartAdmin: async (req, res) => {
         try {
             let { qty, catatan, idproduct, idstock } = req.body
@@ -213,7 +183,7 @@ module.exports = {
     checkoutAdmin: async (req, res) => {
         try {
             let { iduser, idwarehouse, idstatus, idproduct, idstock, idprovinsi, idkota, stock, invoice, ongkir, added_date } = req.body
-            //insert table transaksi
+            
             let insertTransaction = await dbQuery(`INSERT INTO transaksi_warehouse (iduser, idwarehouse, idstatus, invoice, idproduct, idstock, idprovinsi, idkota, ongkir, added_date, stock)
             VALUES (${db.escape(iduser)}, ${db.escape(idwarehouse)},
              ${db.escape(idstatus)}, ${db.escape(invoice)},             
@@ -226,14 +196,7 @@ module.exports = {
                 message: 'success transaction',
                 success: true
             })
-            // if (insertTransaction.insertId) {
-            //     //insert table detail transaksi
-            //     await dbQuery(`INSERT INTO detail_transaksi_warehouse (idtransaksi_warehouse, idwarehouse, idproduct, idstock, qty, catatan, sub_total)
-            //       VALUES ${req.body.detail.map(item => `(${insertTransaction.insertId},${db.escape(item.idwarehouse)}, ${db.escape(item.idproduct)}, ${db.escape(item.idstock)}, ${db.escape(item.qty)}, ${db.escape(item.catatan)}, ${db.escape(item.products[0].harga * item.qty)})`).toString()}`)
-            //     //delete data pada table cart
-            //     await dbQuery(`DELETE FROM carts WHERE iduser=${req.dataUser.iduser}`)
 
-            // }
         } catch (error) {
             console.log('error')
             res.status(500).send({
@@ -251,13 +214,11 @@ module.exports = {
 
             let getStock = await dbQuery(`SELECT * from stocks where idproduct=${req.params.idproduct} and idwarehouse=${req.dataUser.idwarehouse}`)
             let sisaStock
-            dataRequest.forEach(async (item, index) => {
-                // if(item.idproduct == getStock[0].idproduct){
+            dataRequest.forEach(async (item, index) => {                
                 sisaStock = getStock[0].qty - item.stock
                 console.log(`getStock`, getStock)
                 console.log(`getStockArray`, getStock[0])
-                console.log(`sisaStock`, sisaStock)
-                // }
+                console.log(`sisaStock`, sisaStock)                
             })
             await dbQuery(`UPDATE stocks SET qty=${sisaStock} where idstock=${req.params.idstock} and idproduct=${req.params.idproduct}`)
 
@@ -325,8 +286,7 @@ module.exports = {
         }
     },
     getWarehouseAdmin: async (req, res) => {
-        try {
-            // let getWarehouse = await dbQuery(`SELECT * FROM warehouse;`)
+        try {            
             let getWarehouseAdmin = await dbQuery(`select * from warehouse w join users u on w.idwarehouse = u.idwarehouse where u.iduser = ${req.dataUser.iduser};`)
             res.status(200).send({
                 success: true,
@@ -343,14 +303,7 @@ module.exports = {
         }
     },
     getProductAdmin: async (req, res) => {
-        try {
-            // let filterQuery = []
-            // for (prop in req.query) {
-            //     if (req.query[prop]) {
-            //         filterQuery.push(` ${prop == 'idwarehouse' ? `s.${prop}` : `${prop} LIKE %${req.query[prop]}%`}`)
-            //     }
-            // }
-            // console.log('isi filter query', filterQuery)            
+        try {            
             let query_get = `SELECT s.*, w.idprovinsi, w.idkota, w.idstatus as status_warehouse, w.nama as nama_warehouse, w.alamat, w.provinsi, w.kota, p.idmaterial, p.idkategori, p.idjenis_product, p.idstatus as status_product, p.nama as nama_product, p.harga, p.deskripsi, p.berat, p.added_date, p.updated_date, k.kategori, j.jenis_product, j.url as url_jenis_product, m.material, m.url as url_material FROM stocks as s
             JOIN warehouse as w ON s.idwarehouse = w.idwarehouse
             JOIN products as p ON s.idproduct = p.idproduct
@@ -359,29 +312,20 @@ module.exports = {
             JOIN material as m ON p.idmaterial = m.idmaterial            
             WHERE p.idstatus = '1' ${req.query.idwarehouse ? `AND s.idwarehouse = ${req.query.idwarehouse}` : `AND s.idwarehouse = 1`} 
             ${req.query.idproduct ? `AND s.idproduct = ${req.query.idproduct}` : ``};`
-            // ${filterQuery.length > 0 ? `AND ${filterQuery.join(" AND ")}` : ''};`
-            // console.log('isi query', query_get)
-            let resultsProduct = await dbQuery(query_get)
-            let resultsImage = await dbQuery(`SELECT * FROM images`)
-            // let resultsStock = await dbQuery(`SELECT * FROM stocks`)
+
+            let resultsProduct = await dbQuery(query_get)            
+            let resultsImage = await dbQuery(`SELECT * FROM images`)            
             let resultsMaterial = await dbQuery(`SELECT * FROM material`)
 
             resultsProduct.forEach((item, index) => {
-                item.images = [];
-                // item.stock = [];
+                item.images = [];                
                 item.material = [];
                 resultsImage.forEach(item2 => {
-                    if (item.idproduct == item2.idproduct) {
-                        // delete item2.idproduct
+                    if (item.idproduct == item2.idproduct) {                        
                         item.images.push(item2)
                     }
                 })
-                // resultsStock.forEach(item3 => {
-                //     if (item3.idproduct == item.idproduct) {
-                //         delete item3.idproduct
-                //         item.stock.push(item3)
-                //     }
-                // })
+                
                 resultsMaterial.forEach((item4, index) => {
                     if (item4.idmaterial == item.idmaterial) {
                         item.material.push(item4)
